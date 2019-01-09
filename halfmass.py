@@ -99,21 +99,20 @@ if __name__ == '__main__':
 	boxsize = int(MODEL[1:3])
 
 	size_comp = True
-	save = True
-	load = False
+	save = False
 	plotvar = 'sdss_r'
-	if len(sys.argv)==5: plotvar=sys.argv[4]
+	#if len(sys.argv)==5: plotvar=sys.argv[4]
 	#plotvar = 'sfr'
-	#plotvar = 'sdss_r'
 
-	"""
+	plot_dir = '/home/sapple/simba_sizes/plots/'
+	data_dir = '/home/sapple/simba_sizes/data/'
+
 	if plotvar not in ['mstar','sfr']:
     		try: sdss_bands = fsps.find_filter(plotvar)
     		except: sys.exit('Filter %s not found'%plotvar)
     		print('Doing rhalf in band %s, generating FSPS stellar pop...'%plotvar)
     		spop = fsps.StellarPopulation(zcontinuous=1, sfh=0, logzsol=0.0, dust_type=2, dust2=0.2)
     		print spop.ssp_ages
-	"""
 
 	# load in input file
 	fig,ax = plt.subplots()
@@ -145,11 +144,7 @@ if __name__ == '__main__':
 		gp = readsnap(snapfile,'pos','gas',units=1,suppress=1)/(1+redshift)/h # pkpc
 		gsfr = readsnap(snapfile,'sfr','gas',units=1,suppress=1) # Mo/yr
 
-		if load:
-			rad_l = np.load('halflight_'+MODEL+'_'+WIND+'_'+SNAP+'.npy')
-			rad_m = np.load('halfmass_'+MODEL+'_'+WIND+'_'+SNAP+'.npy')
-
-		else:
+		if not os.path.isfile(data_dir+'MODEL'+'_'+WIND[0]+'_'+str(SNAP)+'_data.h5'):
 
 			# compute rhalf
 			rhalf_l = np.zeros([3,len(mygals)])
@@ -201,27 +196,34 @@ if __name__ == '__main__':
 						rhalf_m[idir0][igal],cent = compute_rhalf(idir0,mass,pos)
 					if igal%(len(mygals)/20)==0: 
 						print('%d logM*= %.3f c= [%.3f,%.3f] rh2d= %.3f %.3f %.3f rh3d= %.3f' % \
-						(igal,np.log10(ms[igal]),cent[0],cent[1],rhalf[0][igal],rhalf[1][igal],rhalf[2][igal],mygals[igal].radii['stellar_half_mass']))
+						(igal,np.log10(ms[igal]),cent[0],cent[1],rhalf_l[0][igal],rhalf_l[1][igal],rhalf_l[2][igal],mygals[igal].radii['stellar_half_mass']))
 		    
 			#print len(ms),len(sigv3d),len(sigmastar)
 			rad_l = (rhalf_l[0]+rhalf_l[1]+rhalf_l[2])/3.
 			rad_m = (rhalf_m[0]+rhalf_m[1]+rhalf_m[2])/3		
 			
 			if save:
-				np.save('halfmass_'+MODEL+'_'+WIND+'_'+SNAP+'.npy', rad_m)
-				np.save('halflight_'+MODEL+'_'+WIND+'_'+SNAP+'.npy', rad_l)
+				with h5py.File(data_dir+MODEL+'_'+WIND[0]+'_'+str(SNAP)+'_data.h5', 'w') as hf:
+					hf.create_dataset('stellar_mass', data=np.array(ms))
+					hf.create_dataset('halflight', data=np.array(rad_l))
+					hf.create_dataset('halfmass', data=np.array(rad_m))
+					hr.create_dataset('ssfr', data=np.array(ssfr))
 
 		condition = (central)
 		massbin,cvecbin,ebinlo,ebinhi = pm.runningmedian(np.log10(ms[condition]),ssfr[condition])
 		cvec = ssfr - np.interp(np.log10(ms),massbin,cvecbin)
+		cmap = plt.get_cmap('jet_r')
 
 		# plot half light radius against stellar mass
 
+		print 'Plotting half light radius against stellar mass'
+
+		fig, ax = plt.subplots()
 		xvec = np.log10(ms[rad_l>0])
 		yvec = np.log10(rad_l[rad_l>0])
 		cvec = cvec[rad_l>0]
 		pixsize = 3*(xvec/min(xvec)+1)
-		im = ax.scatter(xvec, yvec, c=cvec, s=pixsize, lw=0, cmap=plt.cm.gnuplot, label=MODEL)
+		im = ax.scatter(xvec, yvec, c=cvec, s=pixsize, lw=0, cmap=cmap, label=MODEL)
 		#plt.plot(xvec, yvec, 'o', c='k', ms=2)
 		fig.colorbar(im,ax=ax,label=r'$\Delta\log$sSFR')
 		if redshift <= 1.5:
@@ -245,11 +247,13 @@ if __name__ == '__main__':
 		plt.xlabel(r'$\log\ M_{*}$',fontsize=16)
 		plt.ylabel(r'$\log\ R_{half,*}$' ,fontsize=16)
 		plt.legend(loc='lower right')
-		plt.savefig('halflight_'+MODEL+'_'+WIND+'_'+SNAP+'.pdf', bbox_inches='tight', format='pdf')
+		plt.savefig(plot_dir+'halflight_'+MODEL+'_'+WIND[0]+'_'+str(SNAP)+'.pdf', bbox_inches='tight', format='pdf')
 		plt.clf()
 	    
 	    
 		# plot half mass radius against stellar mass
+
+		print 'Plotting half mass radius against stellar mass'
 
 		fig, ax = plt.subplots()
 		xvec = np.log10(ms[(rad_l>0) & (rad_m>0)])
@@ -257,7 +261,7 @@ if __name__ == '__main__':
 		cvec = cvec[(rad_l>0) & (rad_m>0)]
 		gal_pos = gal_pos[(rad_l>0) & (rad_m>0)]
 		pixsize = 3*(xvec/min(xvec)+1)
-		im = ax.scatter(xvec, yvec, c=cvec, s=pixsize, lw=0, cmap=plt.cm.gnuplot, label=MODEL)
+		im = ax.scatter(xvec, yvec, c=cvec, s=pixsize, lw=0, cmap=cmap, label=MODEL)
 		#plt.plot(xvec, yvec, 'o', c='k', ms=2)
 		fig.colorbar(im,ax=ax,label=r'$\Delta\log$sSFR')
 	 
@@ -279,10 +283,12 @@ if __name__ == '__main__':
 		plt.ylim(-0.3,1.8-0.3*redshift)
 		plt.ylabel(r'$\log\ R_{half,e}$' ,fontsize=16)
 		ax.legend(loc='lower right')
-		plt.savefig('halfmass_'+MODEL+'_'+WIND+'_'+SNAP+'.pdf', bbox_inches='tight', format='pdf')
+		plt.savefig(plot_dir+'halfmass_'+MODEL+'_'+WIND[0]+'_'+str(SNAP)+'.pdf', bbox_inches='tight', format='pdf')
 		plt.clf()
 
 		# plot half light radius against half mass radius
+
+		print 'Plotting half light radius against half mass radius'
 
 		fig, ax = plt.subplots()    
 		if redshift <= 1.5:
@@ -312,6 +318,6 @@ if __name__ == '__main__':
 		plt.ylabel(r'$\log\ R_{half,e}$' ,fontsize=16)
 		ax.legend(loc='lower right')
 
-		plt.savefig('halflightmass_median'+MODEL+'_'+WIND+'_'+SNAP+'.pdf', bbox_inches='tight', format='pdf')
+		plt.savefig(plot_dir+'halflightmass_median_'+MODEL+'_'+WIND[0]+'_'+str(SNAP)+'.pdf', bbox_inches='tight', format='pdf')
 		plt.clf()
 
