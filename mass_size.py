@@ -110,11 +110,9 @@ for i in range(6):
 	
 	ax = fig.add_subplot(3, 2, i+1)
 
-	im = ax.scatter(simba_x, simba_y, c=simba_c, s=pixsize, lw=0, cmap=cmap, label='Simba')
+	im = ax.scatter(simba_x, simba_y, c=simba_c, s=pixsize, lw=0, cmap=cmap, label='Simba', vmin=-1.6)
 	cbar = fig.colorbar(im,ax=ax, label=r'$\Delta\log$sSFR')
 	cbar.ax.tick_params(labelsize=10)
-	cbar.set_clim(-1.6, )
-	#cbar.ax.set_label(r'$\Delta\log$sSFR', fontsize=8) 
 	
 	# plot simba red and blue/ all galaxies
 	if simba_z[i] <= 1.5:
