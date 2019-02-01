@@ -6,7 +6,7 @@ import numpy as np
 from readgadget import readsnap
 import caesar
 from astropy.cosmology import FlatLambdaCDM
-
+import matplotlib.pyplot as plt
 import h5py
 
 def tage(cosmo,thubble,a):
@@ -17,9 +17,9 @@ def tage(cosmo,thubble,a):
 
 model = 'm50n512'
 wind = 's50j7k'
-snap = '151'
+snap = '078'
 
-results_dir = '/home/sapple/simba_profiles/profiles/'
+results_dir = '/home/sapple/simba_sizes/profiles/profiles/'
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
@@ -31,15 +31,14 @@ cosmo = FlatLambdaCDM(H0=100*h, Om0=sim.simulation.omega_matter, Ob0=sim.simulat
 thubble = cosmo.age(z).value # in Gyr
 
 # for sample of galaxies and stars
-sfr_use = 1. # look at literature for this range
-sfr_range = 0.5
+sfr_min = 0.5 # look at literature for this range
 mass_lower = 4.6e9
 age_min = 50.
 age_max = 100.
+
 # for making profiles
 disk_profile = True
 spherical_profile = False
-r_max = 100.
 r_rot = 500.
 DR = 1. # kpc
 NR = 30
@@ -52,12 +51,12 @@ Npixels = 100
 
 # load in the caesar galaxy data to make an initial cut of star forming galaxies
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
-gal_bm = np.array([i.masses['black_hole'].in_units('Msun') for i in sim.galaxies])
+gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.galaxies])
 gal_pos = np.array([i.pos.in_units('kpc') for i in sim.galaxies])
+gal_rad = np.array([i.radius.in_units('kpc') for i in sim.galaxies])
 
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
-gal_sfr_mask = (gal_sfr > sfr_use - sfr_range) & (gal_sfr < sfr_use + sfr_range)
-gal_ids = np.arange(0, len(sim.galaxies))[gal_sfr_mask]
+gal_ids = np.arange(0, len(sim.galaxies))[gal_sfr > sfr_min]
 
 # load in star particle data with readsnap
 star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+z)) # in kpc
@@ -65,8 +64,8 @@ star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / (h*10**7.)
 star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0)
 star_tform = readsnap(snapfile, 'age', 'star', suppress=1, units=1) # expansion times at time of formation
 
-ssfr_profiles = np.zeros(len(gal_ids), NR)
-sm_profiles = np.zeros(len(gal_ids), NR)
+ssfr_profiles = np.zeros((len(gal_ids), NR))
+sm_profiles = np.zeros((len(gal_ids), NR))
 
 for i in gal_ids:
 	slist = sim.galaxies[i].slist
@@ -85,7 +84,7 @@ for i in gal_ids:
 	ages_mask = (ages > age_min) & (ages < age_max)
 
 	# filter for galaxies with more than 256 new star particles for the profiles
-	if len(np.where(ages_mask == True)) < 256:
+	if len(np.where(ages_mask == True)[0]) < 256:
 		continue
 
 	if spherical_profile:
@@ -95,8 +94,9 @@ for i in gal_ids:
 		vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
 		# 1. compute center of mass for particles within a given radius and shift all particles
+		r_max = 3.*gal_rad[i]
 		posx, posy, posz, vx, vy, vz = recentre_pos_and_vel(x, y, z, vx, vy, vz, mass, r_max)
-		filter_rad = (np.sqrt(posx**2+posy**2+posz**2) < r_rot)
+		filter_rad = (np.sqrt(posx**2+posy**2+posz**2) < 4.*gal_rad[i])
 		# 2. get axis and angle of rotation
 		axis, angle = compute_rotation_to_vec(posx[filter_rad], posy[filter_rad], posz[filter_rad],
 											  vx[filter_rad], vy[filter_rad], vz[filter_rad], mass[filter_rad], vec)
@@ -113,13 +113,13 @@ for i in gal_ids:
 		v_max = np.max(np.log10(im[im>0]))
 
 		plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',vmin=v_min,vmax=v_max, origin="lower")
-		plt.title('Mass: ' + str.format("{0:.6g}", float(gal_mass)) + ' Msun')
+		plt.title('Mass: ' + str.format("{0:.6g}", float(gal_sm[i])) + ' Msun')
 		plt.savefig(results_dir + 'gal_image_'+str(i)+ '.png')
 		plt.clf()
 
 		# make profile of total mass of stars with ages 50Myr - 100Myr
 		mass_new = mass[ages_mask]*10**7
-		r = np.sqrt(posx*posx + posy*posy)
+		r = np.sqrt(posx*posx + posy*posy)[ages_mask]
 
 		for j in range(0,NR):
 			mask = (r >= j*DR)*(r < (j+1)*DR)
@@ -141,7 +141,7 @@ for i in gal_ids:
 		plt.savefig(results_dir+'gal_'+str(i)+'_ssfr_profile.png')
 		plt.clf()
 
-with h5py.File(results_dir+'profiles.h5', 'a') as f:
+with h5py.File(results_dir+model+'_'+snap+'_profiles.h5', 'a') as f:
 	f.create_dataset('ssfr_profiles', data=np.array(ssfr_profiles))
 	f.create_dataset('sm_profiles', data=np.array(sm_profiles))
 	f.create_dataset('gal_ids', data=np.array(gal_ids))
