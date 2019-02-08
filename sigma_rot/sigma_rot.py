@@ -81,9 +81,9 @@ gas_v = readsnap(snapfile,'vel','gas',units=0,suppress=1)
 gas_pos = readsnap(snapfile, 'pos', 'gas', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 gas_mass = readsnap(snapfile, 'mass', 'gas', suppress=1, units=1) / h
 
-sigv_faceon = np.zeros((len(gal_ids), NR)) # velocity dispersion
-vrot_edgeon = np.zeros((len(gal_ids), NR))
-vrot_grav = np.zeros((len(gal_ids), NR))
+sigv_faceon = [] # velocity dispersion
+vrot_edgeon = []
+vrot_grav = []
 
 for i in range(len(gal_ids)):
 	glist = sim.central_galaxies[gal_ids[i]].glist
@@ -111,18 +111,28 @@ for i in range(len(gal_ids)):
 	pos_edgeon = rotate(posx, posy, posz, axis, angle)
 	vel_edgeon = rotate(vx_cm, vy_cm, vz_cm, axis, angle)
 	#redgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
-		
+	
+	sigv_profile = np.zeros(NR)
+	vrot_g_profile = np.zeros(NR)
+	vrot_l_profile = np.zeros(NR)
+
 	for j in range(0,NR):
 		shell_mask = (rfaceon >= j*DR)*(rfaceon < (j+1)*DR)
 		inner_mask = (rfaceon <= (j+1)*DR)
 
 		# get the velocity dispersion within the face-on radial bin
-		sigv_faceon[i][j] = sigma_vel_los(vel_faceon[shell_mask][2])
+		sigv_profile[j] = sigma_vel_los(vel_faceon[shell_mask][2])
 
 		# find the rotational velocity from gravitational energy
 		mass_within_r = np.sum(mass[inner_mask])
 		r_km = (j+1)*DR /(3.086e13*1.e3)
-		vrot_grav[i][j] = vrot_gravity(mass_within_r, r_km, sigv3d[i][j], G)
+		vrot_g_profile[j] = vrot_gravity(mass_within_r, r_km, sigv3d[i][j], G)
 		
 		# find the rotational velocity in line of sight
-		vrot_edgeon = np.max(np.abs(vel_edgeon[1][shell_mask]))
+		vrot_l_profile[j] = np.max(np.abs(vel_edgeon[1][shell_mask]))
+
+	sigv_faceon.append(sigv_faceon)
+	vrot_grav.append(vrot_g_profile)
+	vrot_edgeon.append(vrot_l_profile)
+	
+# need to check all these projections and rotations etc.
