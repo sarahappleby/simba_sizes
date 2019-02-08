@@ -19,16 +19,16 @@ model = 'm50n512'
 wind = 's50j7k'
 snap = '078'
 
-results_dir = '/home/sapple/simba_sizes/profiles/profiles/'
+results_dir = '/home/sapple/simba_sizes/profiles/snap_'+snap+'/profiles/'
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
 sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5')
 
 h = sim.simulation.hubble_constant
-z = sim.simulation.redshift
+redshift = sim.simulation.redshift
 cosmo = FlatLambdaCDM(H0=100*h, Om0=sim.simulation.omega_matter, Ob0=sim.simulation.omega_baryon, Tcmb0=2.73)
-thubble = cosmo.age(z).value # in Gyr
+thubble = cosmo.age(redshift).value # in Gyr
 
 # for sample of galaxies and stars
 sfr_min = 0.5 # look at literature for this range
@@ -50,16 +50,16 @@ xmax = 20.
 Npixels = 100
 
 # load in the caesar galaxy data to make an initial cut of star forming galaxies
-gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
-gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.galaxies])
-gal_pos = np.array([i.pos.in_units('kpc') for i in sim.galaxies])
-gal_rad = np.array([i.radius.in_units('kpc') for i in sim.galaxies])
+gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.central_galaxies])
+gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.central_galaxies])
+gal_pos = np.array([i.pos.in_units('kpc') for i in sim.central_galaxies])
+gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.central_galaxies])
 
-gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
-gal_ids = np.arange(0, len(sim.galaxies))[gal_sfr > sfr_min]
+gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.central_galaxies])
+gal_ids = np.arange(0, len(sim.central_galaxies))[gal_sfr > sfr_min]
 
 # load in star particle data with readsnap
-star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+z)) # in kpc
+star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / (h*10**7.)
 star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0)
 star_tform = readsnap(snapfile, 'age', 'star', suppress=1, units=1) # expansion times at time of formation
@@ -94,12 +94,45 @@ for i in gal_ids:
 		vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
 		# 1. compute center of mass for particles within a given radius and shift all particles
-		r_max = 3.*gal_rad[i]
+		r_max = 2.*gal_rad[i]
 		posx, posy, posz, vx, vy, vz = recentre_pos_and_vel(x, y, z, vx, vy, vz, mass, r_max)
-		filter_rad = (np.sqrt(posx**2+posy**2+posz**2) < 4.*gal_rad[i])
-		# 2. get axis and angle of rotation
-		axis, angle = compute_rotation_to_vec(posx[filter_rad], posy[filter_rad], posz[filter_rad],
-											  vx[filter_rad], vy[filter_rad], vz[filter_rad], mass[filter_rad], vec)
+                
+                # make image of face-on galaxy
+                filter_rad=(posx>xmin)*(posx<xmax)*(posy>xmin)*(posy<xmax)
+                im,xedges,yedges=np.histogram2d(posx[filter_rad],posy[filter_rad],bins=(Npixels,Npixels),weights=mass[filter_rad])
+                im=im/((xmax-xmin)/float(Npixels))**2 #gives surface density
+                extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+
+                v_min = np.min(np.log10(im[im>0]))
+                v_max = np.max(np.log10(im[im>0]))
+
+                plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',vmin=v_min,vmax=v_max, origin="lower")
+                plt.title('Mass: ' + str.format("{0:.6g}", float(gal_sm[i])) + ' Msun')
+                plt.savefig(results_dir + 'image_stars_initial_gal_'+str(i)+ '.png')
+                plt.clf()
+
+                # second center of mass recentering
+                filter_rad = (np.sqrt(posx**2+posy**2+posz**2) < 2.*gal_rad[i])
+                posx, posy, posz, vx, vy, vz = recenter_pos_and_vel(posx[filter_rad], posy[filter_rad], posz[filter_rad], 
+                                                                    vx[filter_rad], vy[filter_rad], vz[filter_rad], mass[filter_rad], r_max)
+    		
+                # make image of face-on galaxy
+                filter_rad=(posx>xmin)*(posx<xmax)*(posy>xmin)*(posy<xmax)
+                im,xedges,yedges=np.histogram2d(posx[filter_rad],posy[filter_rad],bins=(Npixels,Npixels),weights=mass[filter_rad])
+                im=im/((xmax-xmin)/float(Npixels))**2 #gives surface density
+                extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+
+                v_min = np.min(np.log10(im[im>0]))
+                v_max = np.max(np.log10(im[im>0]))
+
+                plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',vmin=v_min,vmax=v_max, origin="lower")
+                plt.title('Mass: ' + str.format("{0:.6g}", float(gal_sm[i])) + ' Msun')
+                plt.savefig(results_dir + 'image_stars_second_gal_'+str(i)+ '.png')
+                plt.clf()
+            
+                
+                # 2. get axis and angle of rotation
+		axis, angle = compute_rotation_to_vec(posx, posy, posz, vx, vy, vz, mass, vec)
 		# 3. rotate positions and velocities
 		posx, posy, posz = rotate(posx, posy, posz, axis, angle)
 
@@ -114,7 +147,7 @@ for i in gal_ids:
 
 		plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',vmin=v_min,vmax=v_max, origin="lower")
 		plt.title('Mass: ' + str.format("{0:.6g}", float(gal_sm[i])) + ' Msun')
-		plt.savefig(results_dir + 'gal_image_'+str(i)+ '.png')
+		plt.savefig(results_dir + 'image_stars_gal_'+str(i)+ '.png')
 		plt.clf()
 
 		# make profile of total mass of stars with ages 50Myr - 100Myr
@@ -125,20 +158,20 @@ for i in gal_ids:
 			mask = (r >= j*DR)*(r < (j+1)*DR)
 			sm_profiles[i][j] = np.sum(mass_new[mask])
 
-		# divide by 50Myr to get SFR in last 50Myr
-		ssfr_profiles[i] = sm_profiles[i] / 50.
+		# divide by 50Myr to get SFR in last 50Myr with 18% instantaneous mass loss
+		ssfr_profiles[i] = sm_profiles[i]*1.18 / 50.e6
 
 		# plotting profiles
 		plt.semilogy(r_plot,sm_profiles[i])
 		plt.xlabel('R (kpc)')
-		plt.ylabel('M_*')
-		plt.savefig(results_dir+'gal_'+str(i)+'_sm_profile.png')
+		plt.ylabel('M_* (Msun)')
+		plt.savefig(results_dir+'sm_profile_gal_'+str(i)+'.png')
 		plt.clf()
 
 		plt.plot(r_plot,ssfr_profiles[i])
 		plt.xlabel('R (kpc)')
-		plt.ylabel('sSFR')
-		plt.savefig(results_dir+'gal_'+str(i)+'_ssfr_profile.png')
+		plt.ylabel('sSFR (Msun/yr)')
+		plt.savefig(results_dir+'ssfr_profile_gal_'+str(i)+'.png')
 		plt.clf()
 
 with h5py.File(results_dir+model+'_'+snap+'_profiles.h5', 'a') as f:
