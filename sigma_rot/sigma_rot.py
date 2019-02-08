@@ -1,7 +1,7 @@
 import numpy as np
 import caesar
 from readgadget import readsnap
-
+from yt import YTArray, YTQuantity
 import sys
 sys.path.append('/home/sapple/tools/')
 from projection import recentre_pos_and_vel, compute_rotation_to_vec, rotate
@@ -41,7 +41,7 @@ def vrot_gravity(mass, r, sigma_vel, G):
 	Find the rotational velocity from total energy
 	"""
 	grav_energy =  G*mass / r 
-	return np.sqrt(grav_energy - 0.5*sigma_vel)
+	return np.sqrt(grav_energy - 0.5*(sigma_vel**2))
 
 
 model = 'm50n512'
@@ -121,12 +121,12 @@ for i in range(len(gal_ids)):
 		inner_mask = (rfaceon <= (j+1)*DR)
 
 		# get the velocity dispersion within the face-on radial bin
-		sigv_profile[j] = sigma_vel_los(vel_faceon[shell_mask][2])
+		sigv_profile[j] = sigma_vel_los(vel_faceon[2][shell_mask])
 
 		# find the rotational velocity from gravitational energy
-		mass_within_r = np.sum(mass[inner_mask])
-		r_km = (j+1)*DR /(3.086e13*1.e3)
-		vrot_g_profile[j] = vrot_gravity(mass_within_r, r_km, sigv3d[i][j], G)
+		mass_within_r = YTQuantity(np.sum(mass[inner_mask]), 'Msun')
+		r_km = YTArray((j+1)*DR, 'kpc').in_units('km')
+		vrot_g_profile[j] = vrot_gravity(mass_within_r, r_km, YTQuantity(sigv_profile[j], 'km/s'), G)
 		
 		# find the rotational velocity in line of sight
 		vrot_l_profile[j] = np.max(np.abs(vel_edgeon[1][shell_mask]))
