@@ -60,9 +60,9 @@ G = sim.simulation.G.in_units('km**3/(Msun*s**2)')
 
 sfr_min = 0.5 # look at literature for this range
 mass_lower = 4.6e9
-factor = 2.
+factor = 3. # do profile up to three times half mass radius
 
-DR = 1. # kpc
+NR = 15
 
 edge_vec = np.array([0, 1, 0]) # for edge-on projection
 face_vec = np.array([0, 0, 1]) # for face-on projection
@@ -81,9 +81,9 @@ gas_v = readsnap(snapfile,'vel','gas',units=0,suppress=1)
 gas_pos = readsnap(snapfile, 'pos', 'gas', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 gas_mass = readsnap(snapfile, 'mass', 'gas', suppress=1, units=1) / h
 
-sigv_faceon = [] # velocity dispersion
-vrot_edgeon = []
-vrot_grav = []
+sigv_faceon = np.zeros((len(gal_ids), NR)) # velocity dispersion
+vrot_edgeon = np.zeros((len(gal_ids), NR))
+vrot_grav = np.zeros((len(gal_ids), NR))
 
 for i in range(len(gal_ids)):
 	glist = sim.central_galaxies[gal_ids[i]].glist
@@ -92,7 +92,8 @@ for i in range(len(gal_ids)):
 	vel = gas_v[glist]
 	mass = gas_mass[glist]
 	r_max = factor*gal_rad[gal_ids[i]]
-	NR = int(r_max/DR)+1
+
+	DR = r_max / NR
 
 	# 1. compute center of mass for particles within a given radius and shift all particles
 	posx, posy, posz, vx_cm, vy_cm, vz_cm = recentre_pos_and_vel(pos[:, 0], pos[:, 1], pos[:, 2], 
@@ -110,29 +111,23 @@ for i in range(len(gal_ids)):
 	# 3. rotate velocities to line of sight direction
 	pos_edgeon = rotate(posx, posy, posz, axis, angle)
 	vel_edgeon = rotate(vx_cm, vy_cm, vz_cm, axis, angle)
+	r_edgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
 	#redgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
 	
-	sigv_profile = np.zeros(NR)
-	vrot_g_profile = np.zeros(NR)
-	vrot_l_profile = np.zeros(NR)
-
 	for j in range(0,NR):
 		shell_mask = (rfaceon >= j*DR)*(rfaceon < (j+1)*DR)
 		inner_mask = (rfaceon <= (j+1)*DR)
+		edgeon_mask = (r_edgeon >= j*DR)*(r_edgeon < (j+1)*DR)
 
 		# get the velocity dispersion within the face-on radial bin
-		sigv_profile[j] = sigma_vel_los(vel_faceon[2][shell_mask])
+		sigv_faceon[i][j] = sigma_vel_los(vel_faceon[2][shell_mask])
+		# make image of faceon particles included in this calculation
 
 		# find the rotational velocity from gravitational energy
 		mass_within_r = YTQuantity(np.sum(mass[inner_mask]), 'Msun')
 		r_km = YTArray((j+1)*DR, 'kpc').in_units('km')
-		vrot_g_profile[j] = vrot_gravity(mass_within_r, r_km, YTQuantity(sigv_profile[j], 'km/s'), G)
+		vrot_grav[i][j] = vrot_gravity(mass_within_r, r_km, YTQuantity(sigv_faceon[i][j], 'km/s'), G)
 		
 		# find the rotational velocity in line of sight
-		vrot_l_profile[j] = np.max(np.abs(vel_edgeon[1][shell_mask]))
-
-	sigv_faceon.append(sigv_faceon)
-	vrot_grav.append(vrot_g_profile)
-	vrot_edgeon.append(vrot_l_profile)
-	
-# need to check all these projections and rotations etc.
+		vrot_edgeon[i][j] = np.max(np.abs(vel_edgeon[1][edgeon_mask]))
+		# make image of edge on particles included in this calculation
