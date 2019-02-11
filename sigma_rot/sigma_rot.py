@@ -6,6 +6,20 @@ import sys
 sys.path.append('/home/sapple/tools/')
 from projection import recentre_pos_and_vel, compute_rotation_to_vec, rotate
 
+def make_image(posx, posy, Npixels, mass, filename):
+	xmin = -20.
+	xmax = 20.
+	im,xedges,yedges=np.histogram2d(posx,posy,bins=(Npixels,Npixels),weights=mass)
+	im=im/((xmax-xmin)/float(Npixels))**2
+	extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+	v_min = np.min(np.log10(im[im>0]))
+	v_max = np.max(np.log10(im[im>0]))
+
+	plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',
+				vmin=v_min,vmax=v_max, origin="lower")
+	plt.savefig(filename)
+	plt.clf()
+
 def sigma_vel(velocities):
 	"""
 	Find the velocity dispersion of an array of velocities.
@@ -63,6 +77,7 @@ mass_lower = 4.6e9
 factor = 3. # do profile up to three times half mass radius
 
 NR = 15
+Npixels = 100
 
 edge_vec = np.array([0, 1, 0]) # for edge-on projection
 face_vec = np.array([0, 0, 1]) # for face-on projection
@@ -114,20 +129,23 @@ for i in range(len(gal_ids)):
 	r_edgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
 	#redgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
 	
+	filename = results_dir + 'image_gal_' + str(gal_ids[i])
+
 	for j in range(0,NR):
 		shell_mask = (rfaceon >= j*DR)*(rfaceon < (j+1)*DR)
 		inner_mask = (rfaceon <= (j+1)*DR)
 		edgeon_mask = (r_edgeon >= j*DR)*(r_edgeon < (j+1)*DR)
 
+		make_image(pos_faceon[0][shell_mask], pos_faceon[1][shell_mask], Npixels, mass[shell_mask], filename+'_faceon_'+str(j)+'.png')
+		make_image(pos_edgeon[0][edgeon_mask], pos_edgeon[1][edgeon_mask], Npixels, mass[edgeon_mask], filename+'_edgeon_'+str(j)+'.png')		
+
 		# get the velocity dispersion within the face-on radial bin
 		sigv_faceon[i][j] = sigma_vel_los(vel_faceon[2][shell_mask])
-		# make image of faceon particles included in this calculation
 
 		# find the rotational velocity from gravitational energy
 		mass_within_r = YTQuantity(np.sum(mass[inner_mask]), 'Msun')
 		r_km = YTArray((j+1)*DR, 'kpc').in_units('km')
 		vrot_grav[i][j] = vrot_gravity(mass_within_r, r_km, YTQuantity(sigv_faceon[i][j], 'km/s'), G)
-		
+
 		# find the rotational velocity in line of sight
 		vrot_edgeon[i][j] = np.max(np.abs(vel_edgeon[1][edgeon_mask]))
-		# make image of edge on particles included in this calculation
