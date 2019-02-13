@@ -19,7 +19,7 @@ model = 'm50n512'
 wind = 's50j7k'
 snap = '078'
 
-results_dir = '/home/sapple/simba_sizes/profiles/snap_'+snap+'/profiles/'
+results_dir = '/home/sapple/simba_sizes/profiles/snap_'+snap+'/'
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
@@ -35,13 +35,11 @@ sfr_min = 0.5 # look at literature for this range
 mass_lower = 4.6e9
 age_min = 50.
 age_max = 100.
+factor = 3.
 
 # for making profiles
 disk_profile = True
-spherical_profile = False
-r_rot = 500.
-DR = 1. # kpc
-NR = 30
+NR = 15
 r_plot = np.arange(0,NR*DR,DR)
 
 # for plotting
@@ -53,14 +51,15 @@ Npixels = 100
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.central_galaxies])
 gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.central_galaxies])
 gal_pos = np.array([i.pos.in_units('kpc') for i in sim.central_galaxies])
-gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.central_galaxies])
-
+gal_rad = np.array([i.radii['total_half_mass'].in_units('kpc') for i in sim.central_galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.central_galaxies])
-gal_ids = np.arange(0, len(sim.central_galaxies))[gal_sfr > sfr_min]
+
+len_mask = np.array([len(i.glist) > 256 for i in sim.central_galaxies])
+gal_ids = np.arange(0, len(sim.central_galaxies))[(gal_sfr > sfr_min)*len_mask]
 
 # load in star particle data with readsnap
 star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
-star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / (h*10**7.)
+star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / h
 star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0)
 star_tform = readsnap(snapfile, 'age', 'star', suppress=1, units=1) # expansion times at time of formation
 
@@ -68,7 +67,7 @@ ssfr_profiles = np.zeros((len(gal_ids), NR))
 sm_profiles = np.zeros((len(gal_ids), NR))
 
 for i in gal_ids:
-	slist = sim.galaxies[i].slist
+	slist = sim.central_galaxies[i].slist
 
 	x = star_pos[slist][:, 0] - gal_pos[i][0]
 	y = star_pos[slist][:, 1] - gal_pos[i][1]
@@ -84,54 +83,24 @@ for i in gal_ids:
 	ages_mask = (ages > age_min) & (ages < age_max)
 
 	# filter for galaxies with more than 256 new star particles for the profiles
-	if len(np.where(ages_mask == True)[0]) < 256:
-		continue
-
-	if spherical_profile:
-		pass
 
 	if disk_profile:
 		vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
 		# 1. compute center of mass for particles within a given radius and shift all particles
-		r_max = 2.*gal_rad[i]
+		r_max = factor*gal_rad[i]
+		DR = r_max / NR
+
 		posx, posy, posz, vx, vy, vz = recentre_pos_and_vel(x, y, z, vx, vy, vz, mass, r_max)
-                
-                # make image of face-on galaxy
-                filter_rad=(posx>xmin)*(posx<xmax)*(posy>xmin)*(posy<xmax)
-                im,xedges,yedges=np.histogram2d(posx[filter_rad],posy[filter_rad],bins=(Npixels,Npixels),weights=mass[filter_rad])
-                im=im/((xmax-xmin)/float(Npixels))**2 #gives surface density
-                extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+				
+		# second center of mass recentering
+		filter_rad = (np.sqrt(posx**2+posy**2+posz**2) < r_max)
+		posx, posy, posz, vx, vy, vz = recentre_pos_and_vel(posx[filter_rad], posy[filter_rad], posz[filter_rad], 
+															vx[filter_rad], vy[filter_rad], vz[filter_rad], mass[filter_rad], r_max)
+		mass = mass[filter_rad]
+		ages_mask = ages_mask[filter_rad]
 
-                v_min = np.min(np.log10(im[im>0]))
-                v_max = np.max(np.log10(im[im>0]))
-
-                plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',vmin=v_min,vmax=v_max, origin="lower")
-                plt.title('Mass: ' + str.format("{0:.6g}", float(gal_sm[i])) + ' Msun')
-                plt.savefig(results_dir + 'image_stars_initial_gal_'+str(i)+ '.png')
-                plt.clf()
-
-                # second center of mass recentering
-                filter_rad = (np.sqrt(posx**2+posy**2+posz**2) < 2.*gal_rad[i])
-                posx, posy, posz, vx, vy, vz = recenter_pos_and_vel(posx[filter_rad], posy[filter_rad], posz[filter_rad], 
-                                                                    vx[filter_rad], vy[filter_rad], vz[filter_rad], mass[filter_rad], r_max)
-    		
-                # make image of face-on galaxy
-                filter_rad=(posx>xmin)*(posx<xmax)*(posy>xmin)*(posy<xmax)
-                im,xedges,yedges=np.histogram2d(posx[filter_rad],posy[filter_rad],bins=(Npixels,Npixels),weights=mass[filter_rad])
-                im=im/((xmax-xmin)/float(Npixels))**2 #gives surface density
-                extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-
-                v_min = np.min(np.log10(im[im>0]))
-                v_max = np.max(np.log10(im[im>0]))
-
-                plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',vmin=v_min,vmax=v_max, origin="lower")
-                plt.title('Mass: ' + str.format("{0:.6g}", float(gal_sm[i])) + ' Msun')
-                plt.savefig(results_dir + 'image_stars_second_gal_'+str(i)+ '.png')
-                plt.clf()
-            
-                
-                # 2. get axis and angle of rotation
+		# 2. get axis and angle of rotation
 		axis, angle = compute_rotation_to_vec(posx, posy, posz, vx, vy, vz, mass, vec)
 		# 3. rotate positions and velocities
 		posx, posy, posz = rotate(posx, posy, posz, axis, angle)
@@ -165,13 +134,13 @@ for i in gal_ids:
 		plt.semilogy(r_plot,sm_profiles[i])
 		plt.xlabel('R (kpc)')
 		plt.ylabel('M_* (Msun)')
-		plt.savefig(results_dir+'sm_profile_gal_'+str(i)+'.png')
+		plt.savefig(results_dir+'profiles/sm_profile_gal_'+str(i)+'.png')
 		plt.clf()
 
 		plt.plot(r_plot,ssfr_profiles[i])
 		plt.xlabel('R (kpc)')
 		plt.ylabel('sSFR (Msun/yr)')
-		plt.savefig(results_dir+'ssfr_profile_gal_'+str(i)+'.png')
+		plt.savefig(results_dir+'profiles/ssfr_profile_gal_'+str(i)+'.png')
 		plt.clf()
 
 with h5py.File(results_dir+model+'_'+snap+'_profiles.h5', 'a') as f:

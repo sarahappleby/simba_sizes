@@ -1,4 +1,8 @@
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 import numpy as np
+import h5py
 import caesar
 from readgadget import readsnap
 from yt import YTArray, YTQuantity
@@ -109,6 +113,9 @@ for i in range(len(gal_ids)):
 	r_max = factor*gal_rad[gal_ids[i]]
 
 	DR = r_max / NR
+	r_plot = np.arange(0.5*DR, (NR+0.5)*DR, DR) # bin centers
+        if len(r_plot) > NR:
+            r_plot = r_plot[1:]
 
 	# 1. compute center of mass for particles within a given radius and shift all particles
 	posx, posy, posz, vx_cm, vy_cm, vz_cm = recentre_pos_and_vel(pos[:, 0], pos[:, 1], pos[:, 2], 
@@ -129,23 +136,53 @@ for i in range(len(gal_ids)):
 	r_edgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
 	#redgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
 	
-	filename = results_dir + 'image_gal_' + str(gal_ids[i])
+	filename = results_dir + 'images/image_gal_' + str(gal_ids[i])
+
+	make_image(pos_faceon[0], pos_faceon[1], Npixels, mass, filename+'_faceon.png')
+	make_image(pos_faceon[0], pos_faceon[1], Npixels, mass, filename+'_edgeon.png')
 
 	for j in range(0,NR):
 		shell_mask = (rfaceon >= j*DR)*(rfaceon < (j+1)*DR)
 		inner_mask = (rfaceon <= (j+1)*DR)
 		edgeon_mask = (r_edgeon >= j*DR)*(r_edgeon < (j+1)*DR)
 
-		make_image(pos_faceon[0][shell_mask], pos_faceon[1][shell_mask], Npixels, mass[shell_mask], filename+'_faceon_'+str(j)+'.png')
-		make_image(pos_edgeon[0][edgeon_mask], pos_edgeon[1][edgeon_mask], Npixels, mass[edgeon_mask], filename+'_edgeon_'+str(j)+'.png')		
+		#make_image(pos_faceon[0][shell_mask], pos_faceon[1][shell_mask], Npixels, mass[shell_mask], filename+'_faceon_'+str(j)+'.png')
+		#make_image(pos_edgeon[0][edgeon_mask], pos_edgeon[1][edgeon_mask], Npixels, mass[edgeon_mask], filename+'_edgeon_'+str(j)+'.png')		
 
 		# get the velocity dispersion within the face-on radial bin
-		sigv_faceon[i][j] = sigma_vel_los(vel_faceon[2][shell_mask])
+		if True in shell_mask:
+			sigv_faceon[i][j] = sigma_vel_los(vel_faceon[2][shell_mask])
 
-		# find the rotational velocity from gravitational energy
-		mass_within_r = YTQuantity(np.sum(mass[inner_mask]), 'Msun')
-		r_km = YTArray((j+1)*DR, 'kpc').in_units('km')
-		vrot_grav[i][j] = vrot_gravity(mass_within_r, r_km, YTQuantity(sigv_faceon[i][j], 'km/s'), G)
+			# find the rotational velocity from gravitational energy
+			mass_within_r = YTQuantity(np.sum(mass[inner_mask]), 'Msun')
+			r_km = YTArray((j+1)*DR, 'kpc').in_units('km')
+			vrot_grav[i][j] = vrot_gravity(mass_within_r, r_km, YTQuantity(sigv_faceon[i][j], 'km/s'), G)
+			   
+		if True in edgeon_mask:
+			# find the rotational velocity in line of sight
+			vrot_edgeon[i][j] = np.max(np.abs(vel_edgeon[2][edgeon_mask]))
 
-		# find the rotational velocity in line of sight
-		vrot_edgeon[i][j] = np.max(np.abs(vel_edgeon[1][edgeon_mask]))
+	plt.semilogy(r_plot, sigv_faceon[i])
+	plt.xlabel('R (kpc)')
+	plt.ylabel('Sigma gas (km/s)')
+	plt.savefig(results_dir+'profiles/sigv_profile_gal_'+str(i)+'.png')
+	plt.clf()
+
+	plt.plot(r_plot,vrot_grav[i])
+	plt.xlabel('R (kpc)')
+	plt.ylabel('Vrot gravity (km/s)')
+	plt.savefig(results_dir+'profiles/vrot_grav_profile_gal_'+str(i)+'.png')
+	plt.clf()
+
+	plt.plot(r_plot,vrot_edgeon[i])
+	plt.xlabel('R (kpc)')
+	plt.ylabel('Vrot los (km/s)')
+	plt.savefig(results_dir+'profiles/vrot_los_profile_gal_'+str(i)+'.png')
+	plt.clf()
+
+
+with h5py.File(results_dir+'full_kinematic_profiles.h5', 'a') as f:
+	f.create_dataset('sigmav_gas', data=np.array(sigv_faceon))
+	f.create_dataset('vrot_gravity', data=np.array(vrot_grav))
+	f.create_dataset('vrot_los', data=np.array(vrot_edgeon))
+	f.create_dataset('gal_ids', data=np.array(gal_ids))
