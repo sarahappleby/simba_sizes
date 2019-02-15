@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py
 import caesar
-#from readgadget import readsnap
 import pygad as pg
 from yt import YTArray, YTQuantity
 import sys
@@ -67,112 +66,139 @@ def center_of_quantity(quantity, weight):
 		weight =  np.transpose(np.array([weight,]*len(quantity[0])))
 	return np.sum(quantity*weight, axis=0) / np.sum(weight, axis=0)
 
-model = 'm50n512'
-wind = 's50j7k'
-snap = '151'
-
-results_dir = '/home/sapple/simba_sizes/sigma_rot/'
-data_dir = '/home/rad/data/'+model+'/'+wind+'/'
-#snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
-
-s = pg.Snap(data_dir+'Groups/'+model+'_'+snap+'.hdf5')
-sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5')
-
-h = sim.simulation.hubble_constant
-redshift = sim.simulation.redshift
-G = sim.simulation.G.in_units('km**3/(Msun*s**2)')
-
-ssfr_min = 0. # look at literature for this range
-mass_lower = 4.6e9
-factor = 2. # do profile up to three times half mass radius
-
-NR = 10
-Npixels = 100
-
-edge_vec = np.array([0, 1, 0]) # for edge-on projection
-face_vec = np.array([0, 0, 1]) # for face-on projection
-
-gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.central_galaxies])
-gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.central_galaxies])
-gal_pos = np.array([i.pos.in_units('kpc') for i in sim.central_galaxies])
-gal_rad = np.array([i.radii['total_half_mass'].in_units('kpc') for i in sim.central_galaxies])
-gal_vel = np.array([i.vel.in_units('km/s') for i in sim.central_galaxies])
-gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.central_galaxies])
-gal_ssfr = gal_sfr / gal_sm
-
-len_mask = np.array([len(i.glist) > 256 for i in sim.central_galaxies])
-gal_ids = np.arange(0, len(sim.central_galaxies))[(gal_sfr > sfr_min)*len_mask] # change this to ssfr criteria
-
-#gas_v = readsnap(snapfile,'vel','gas',units=0,suppress=1)
-#gas_pos = readsnap(snapfile, 'pos', 'gas', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
-#gas_mass = readsnap(snapfile, 'mass', 'gas', suppress=1, units=1) / h
-
-
-gas_v = s.gas['vel'].in_units_of('km/s')
-gas_pos = s.gas['pos'].in_units_of('ckpc') / (1+redshift) # in kpc
-gas_mass = s.gas['mass'].in_units_of('Msol')
-abundance_h1 = s.gas['NeutralHydrogenAbundance']
-abundance_h2 = s.gas['fh2']
-
-
-sigv = np.zeros(len(gal_ids)) # velocity dispersion
-vrot_grav = np.zeros(len(gal_ids))
-vrot_gas = np.zeros(len(gal_ids))
-
-for i in range(len(gal_ids)):
-	glist = sim.central_galaxies[gal_ids[i]].glist
-
-	pos = gas_pos[glist]
-	vel = gas_v[glist]
-	mass = gas_mass[glist]
-	r_max = factor*gal_rad[gal_ids[i]]
-	h1 = abundance_h1[glist]
-	h2 = abundance_h2[glist]
-
-	DR = r_max / NR
-	r_plot = np.arange(0.5*DR, (NR+0.5)*DR, DR) # bin centers
-	if len(r_plot) > NR:
-		r_plot = r_plot[1:]
-
-	# add in a maximum r and get sigma within maximum r. then the gravitational velocity is within this r_max
-
-	# do this all for h1
-	pos_cm_h1 = center_of_quantity(pos, h1*mass)
-	vel_cm_h1 = center_of_quantity(vel, h1*mass)
-	pos -= pos_cm_h1
-	vel -= vel_cm_h1
-
-	sigv[i] = sigma_vel(vel)
-
-	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, edge_vec)
+def vrot_los(pos, vel, mass, vec, NR, DR, weight, r_plot, filename):
+	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 	pos_edgeon = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
 	vel_edgeon = rotate(vel[:, 0], vel[:, 1], vel[:, 2], axis, angle)
 	r_edgeon = np.sqrt(pos_edgeon[0]**2 + pos_edgeon[1]**2)
-	
-	vrot_los = np.zeros(NR)
+
+	vrot = np.zeros(NR)
 	for j in range(0,NR):
 		edgeon_mask = (r_edgeon >= j*DR)*(r_edgeon < (j+1)*DR)
-			   
 		if True in edgeon_mask:
 			# find the rotational velocity in line of sight
-			vrot_los[j] = center_of_quantity(vel_edgeon[2][edgeon_mask], (h1*mass)[edgeon_mask])
-	
-	j = np.argmax(vrot_los)
-	vrot_gas[i] = vrot_los[j]
-	r_vrot = (j+0.5)*DR
-	mass_within_r = YTQuantity(np.sum(mass[r_edgeon <= r_vrot]), 'Msun')
-	# get mass within r_max or within position of maximum velocity?
-	vrot_grav[i] = vrot_gravity(mass_within_r, YTArray(r_vrot, 'kpc').in_units('km'), YTQuantity(sigv[i], 'km/s'), G)
+			vrot[j] = center_of_quantity(vel_edgeon[2][edgeon_mask], weight[edgeon_mask])
 
-	plt.plot(r_plot,vrot_los[i])
+	plt.plot(r_plot,vrot)
 	plt.xlabel('R (kpc)')
 	plt.ylabel('Vrot los (km/s)')
-	plt.savefig(results_dir+'profiles/vrot_los_profile_gal_'+str(i)+'.png')
+	plt.savefig(filename)
 	plt.clf()
 
+	return np.max(vrot)
 
-with h5py.File(results_dir+'full_kinematic_profiles.h5', 'a') as f:
-	f.create_dataset('sigmav_gas', data=np.array(sigv_faceon))
-	f.create_dataset('vrot_gravity', data=np.array(vrot_grav))
-	f.create_dataset('vrot_los', data=np.array(vrot_los))
-	f.create_dataset('gal_ids', data=np.array(gal_ids))
+
+if __name__ == '__main__':
+
+	model = 'm50n512'
+	wind = 's50j7k'
+	snap = '151'
+
+	results_dir = '/home/sapple/simba_sizes/sigma_rot/'
+	data_dir = '/home/rad/data/'+model+'/'+wind+'/'
+	#snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
+
+	s = pg.Snap(data_dir+'snap_'+model+'_'+snap+'.hdf5')
+	sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5')
+
+	h = sim.simulation.hubble_constant
+	redshift = sim.simulation.redshift
+	G = sim.simulation.G.in_units('km**3/(Msun*s**2)')
+
+	ssfr_min = 0. # look at literature for this range
+	mass_lower = 4.6e9
+	factor = 2. # do profile up to three times half mass radius
+
+	NR = 10
+	Npixels = 100
+
+	edge_vec = np.array([0, 1, 0]) # for edge-on projection
+	face_vec = np.array([0, 0, 1]) # for face-on projection
+
+	gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.central_galaxies])
+	gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.central_galaxies])
+	gal_pos = np.array([i.pos.in_units('kpc') for i in sim.central_galaxies])
+	gal_rad = np.array([i.radii['total_half_mass'].in_units('kpc') for i in sim.central_galaxies])
+	gal_vel = np.array([i.vel.in_units('km/s') for i in sim.central_galaxies])
+	gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.central_galaxies])
+	gal_ssfr = gal_sfr / gal_sm
+
+	len_mask = np.array([len(i.glist) > 256 for i in sim.central_galaxies])
+	gal_ids = np.arange(0, len(sim.central_galaxies))[(gal_sfr > sfr_min)*len_mask] # change this to ssfr criteria
+
+	#gas_v = readsnap(snapfile,'vel','gas',units=0,suppress=1)
+	#gas_pos = readsnap(snapfile, 'pos', 'gas', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
+	#gas_mass = readsnap(snapfile, 'mass', 'gas', suppress=1, units=1) / h
+
+
+	gas_v = s.gas['vel'].in_units_of('km/s')
+	gas_pos = s.gas['pos'].in_units_of('ckpc') / (1+redshift) # in kpc
+	gas_mass = s.gas['mass'].in_units_of('Msol')
+	abundance_h1 = s.gas['NeutralHydrogenAbundance']
+	abundance_h2 = s.gas['fh2']
+
+
+	sigv_h1 = np.zeros(len(gal_ids)) # velocity dispersion centered on h1
+	sigv_h2 = np.zeros(len(gal_ids)) # velocity dispersion centered on h2
+	vrot_grav_h1 = np.zeros(len(gal_ids)) # using velocity dispersion from h1
+	vrot_grav_h2 = np.zeros(len(gal_ids)) # using velocity dispersion from h2
+	vrot_h1 = np.zeros(len(gal_ids))
+	vrot_h2 = np.zeros(len(gal_ids))
+
+	for i in range(len(gal_ids)):
+		glist = sim.central_galaxies[gal_ids[i]].glist
+
+		h1 = abundance_h1[glist]
+		h2 = abundance_h2[glist]
+		mass = gas_mass[glist]
+		r_max = factor*gal_rad[gal_ids[i]]
+		mass_within_r = YTQuantity(np.sum(mass[pos <= r_max]), 'Msun')
+
+		DR = r_max / NR
+		r_plot = np.arange(0.5*DR, (NR+0.5)*DR, DR) # bin centers
+		if len(r_plot) > NR:
+			r_plot = r_plot[1:]
+
+		# add in a maximum r 
+
+		# do this all for h1
+		pos = gas_pos[glist]
+		vel = gas_v[glist]
+
+		pos_cm_h1 = center_of_quantity(pos, h1*mass)
+		vel_cm_h1 = center_of_quantity(vel, h1*mass)
+		pos -= pos_cm_h1
+		vel -= vel_cm_h1
+
+		sigv_h1[i] = sigma_vel(vel)
+		# get mass within r_max or within position of maximum velocity?
+		vrot_grav_h1[i] = vrot_gravity(mass_within_r, YTArray(r_vrot, 'kpc').in_units('km'), YTQuantity(sigv_h1[i], 'km/s'), G)
+
+		plot_name = results_dir+'profiles/vrot_h1_profile_gal_'+str(i)+'.png'
+		vrot_h1[i] = vrot_los(pos, vel, mass, vec, NR, DR, weight, r_plot, plot_name)
+
+
+		# do this all for h2
+		pos = gas_pos[glist]
+		vel = gas_v[glist]
+
+		pos_cm_h2 = center_of_quantity(pos, h2*mass)
+		vel_cm_h2 = center_of_quantity(vel, h2*mass)
+		pos -= pos_cm_h2
+		vel -= vel_cm_h2
+
+		sigv_h2[i] = sigma_vel(vel)
+		# get mass within r_max or within position of maximum velocity?
+		vrot_grav_h2[i] = vrot_gravity(mass_within_r, YTArray(r_vrot, 'kpc').in_units('km'), YTQuantity(sigv_h2[i], 'km/s'), G)
+
+		plot_name = results_dir+'profiles/vrot_h2_profile_gal_'+str(i)+'.png'
+		vrot_h2[i] = vrot_los(pos, vel, mass, vec, NR, DR, weight, r_plot, plot_name)
+
+	with h5py.File(results_dir+'full_kinematic_profiles.h5', 'a') as f:
+		f.create_dataset('sigmav_h1', data=np.array(sigv_h1))
+		f.create_dataset('sigmav_h2', data=np.array(sigv_h2))
+		f.create_dataset('vrot_gravity_h1', data=np.array(vrot_grav_h1))
+		f.create_dataset('vrot_gravity_h2', data=np.array(vrot_grav_h2))
+		f.create_dataset('vrot_h1', data=np.array(vrot_h1))
+		f.create_dataset('vrot_h2', data=np.array(vrot_h2))
+		f.create_dataset('gal_ids', data=np.array(gal_ids))
