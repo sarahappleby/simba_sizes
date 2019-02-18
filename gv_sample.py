@@ -1,4 +1,14 @@
 import caesar
+import numpy as np
+
+def sfms_line(x0, y0):
+	a = 0.73
+	b = -7.7
+	y = x0*a + b
+	if y < y0:
+		return True
+	else:
+		return False
 
 # in belfiore 18, fig 2:
 sfr_min = -1.5
@@ -14,8 +24,12 @@ data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 
 sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5')
 
-gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.central_galaxies])
-gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.central_galaxies])
-gal_ssfr = gal_sfr / gal_sm
+gal_sm = np.log10([i.masses['stellar'].in_units('Msun') for i in sim.central_galaxies])
+gal_sfr = np.log10([i.sfr.in_units('Msun/yr') for i in sim.central_galaxies])
 
-mask = (gal_sm > sm_min) & (gal_sm < sm_max) & (gal_sfr > sfr_min) 
+#mask = (gal_sm > sm_min) & (gal_sm < sm_max) & (gal_sfr > sfr_min) 
+mask = []
+
+for i in range(len(sim.central_galaxies)):
+	mask.append(sfms_line(gal_sm[i], gal_sfr[i]))
+
