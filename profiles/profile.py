@@ -85,10 +85,11 @@ star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / h
 star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0)
 star_tform = readsnap(snapfile, 'age', 'star', suppress=1, units=1) # expansion times at time of formation
 
-ssfr_profiles = [np.array([]) for i in range(10)]
-sm_profiles = [np.array([]) for i in range(10)]
+ssfr_profiles = np.zeros((len(gal_ids), 10))
+sm_profiles = np.zeros((len(gal_ids), 10))
+sm_frac_profiles = np.zeros((len(gal_ids), 10))
 
-len_mask = np.ones(len(gal_ids))
+len_mask = np.array([True for i in range(len(gal_ids))])
 
 for i in range(len(gal_ids)):
 
@@ -101,7 +102,7 @@ for i in range(len(gal_ids)):
 
 		# filter for galaxies with more than 256 new star particles for the profiles
 		if len(ages[ages_mask]) < 256:
-			len_mask[i] = 0.
+			len_mask[i] = False
 			continue
 	else:
 		ages_mask = [True for j in range(len(slist))]
@@ -109,10 +110,14 @@ for i in range(len(gal_ids)):
 	pos = star_pos[slist]
 	vel = star_vels[slist]
 	mass = star_mass[slist]
+	total_mass = np.sum(mass)
 	r_max = factor*gal_rad[gal_ids[i]]
 
 	# for the profile
 	NR = int(round(r_max / DR))
+	if NR < 5:
+		len_mask[i] = False
+		continue
 
 	pos -= center_of_quantity(pos, mass)
 	vel -= center_of_quantity(vel, mass)
@@ -139,6 +144,7 @@ for i in range(len(gal_ids)):
 		ages_profile[j] = np.sum(mass[mask*ages_mask])
 	# divide by 50Myr to get SFR in last 50Myr with 18% instantaneous mass loss
 	ssfr_profile = ages_profile*mass_loss / time
+	sm_frac = profile / total_mass
 
 	r_plot = np.arange(0.5*DR, (NR+0.5)*DR, DR) # bin centers
 	if len(r_plot) > NR:
@@ -158,17 +164,54 @@ for i in range(len(gal_ids)):
 
 	x = np.arange(0, NR) / r_max*factor
 	digitized = np.digitize(x, bins)
-	sm_bin = [profile[digitized == i] for i in range(1, len(bins) +1)]
-	ssfr_bin = [ssfr_profile[digitized == i] for i in range(1, len(bins) +1)]
-	for j in range(10):
-		sm_profiles[j] = np.append(sm_profiles[j], sm_bin[j])
-		ssfr_profiles[j] = np.append(ssfr_profiles[j], ssfr_bin[j])
+	sm_bin = [profile[digitized == j] for j in range(1, len(bins) +1)]
+	ssfr_bin = [ssfr_profile[digitized == j] for j in range(1, len(bins) +1)]
+	sm_frac_bin = [sm_frac[digitized == j] for j in range(1, len(bins) +1)]
+	
+	ssfr_profiles[i] = np.array([np.sum(j) for j in ssfr_bin])
+	sm_profiles[i] = np.array([np.sum(j) for j in sm_bin])
+	sm_frac_profiles[i] = np.array([np.sum(j) for j in sm_frac_bin])
 
+sm_profiles = sm_profiles[len_mask]
+sm_frac_profiles = sm_frac_profiles[len_mask]
+ssfr_profiles = ssfr_profiles[len_mask]
 gal_ids = gal_ids[len_mask]
-sm_profiles = [np.median(i) for i in sm_profiles]
-ssfr_profiles = [np.median(i) for i in ssfr_profiles]
+
+ssfr_lower = np.percentile(ssfr_profiles, 25, axis=0)
+ssfr_higher = np.percentile(ssfr_profiles, 75, axis=0)
+ssfr_median = np.percentile(ssfr_profiles, 50, axis=0)
+
+sm_lower = np.percentile(sm_profiles, 25, axis=0)
+sm_higher = np.percentile(sm_profiles, 75, axis=0)
+sm_median = np.percentile(sm_profiles, 50, axis=0)
+
+sm_frac_lower = np.percentile(sm_frac_profiles, 25, axis=0)
+sm_frac_higher = np.percentile(sm_frac_profiles, 75, axis=0)
+sm_frac_median = np.percentile(sm_frac_profiles, 50, axis=0)
+
+plt.plot(bins+0.1, sm_median, marker='.', markersize=2)
+plt.xlabel('R half *')
+plt.ylabel('M* (Msun)')
+plt.fill_between(bins+0.1, sm_lower, sm_higher, facecolor='blue', alpha=0.3)
+plt.savefig(results_dir+'sm_profile.png')
+plt.clf()
+
+plt.plot(bins+0.1, sm_frac_median, marker='.', markersize=2)
+plt.xlabel('R half *')
+plt.ylabel('M* fraction')
+plt.fill_between(bins+0.1, sm_frac_lower, sm_frac_higher, facecolor='blue', alpha=0.3)
+plt.savefig(results_dir+'sm_frac_profile.png')
+plt.clf()
+
+plt.plot(bins+0.1, ssfr_median, marker='.', markersize=2)
+plt.xlabel('R half *')
+plt.ylabel('M* fraction')
+plt.fill_between(bins+0.1, ssfr_lower, ssfr_higher, facecolor='blue', alpha=0.3)
+plt.savefig(results_dir+'ssfr_profile.png')
+plt.clf()
 
 with h5py.File(results_dir+model+'_'+snap+'_profiles.h5', 'a') as f:
-	f.create_dataset('ssfr_profile', data=np.array(ssfr_profile))
-	f.create_dataset('sm_profile', data=np.array(sm_profile))
+	f.create_dataset('ssfr_profile', data=np.array(ssfr_profiles))
+	f.create_dataset('sm_profile', data=np.array(sm_profiles))
 	f.create_dataset('gal_ids', data=np.array(gal_ids))
+	f.create_dataset('sm_frac_profiles', data=np.array(sm_frac_profiles))
