@@ -3,6 +3,7 @@ from readgadget import *
 import sys
 import numpy as np
 import h5py
+import gc
 # ---------------------------
 def get_r(mass,pos,r):
     # positions need to be in kpc
@@ -397,8 +398,8 @@ sigtmean = []
 r50_tot = []
 nb_part = []
 
-slists = []
-glists = []
+#slists = []
+#glists = []
 new_pos = []
 new_rad = []
 gal_ids = []
@@ -447,6 +448,7 @@ for g in gals:
 
         if len(cm) == 4:
             x0,y0,z0 = get_cm(mstar,posstar)
+            r0 = cm[-1]
             mask = ( ( (posstar[:,0] - x0)**2 + (posstar[:,1] - y0)**2 + (posstar[:,2] - z0)**2) >= 0.)
             if len(posgas) > 0:
                 mask_gas = ( ( (posgas[:,0] - x0)**2 + (posgas[:,1] - y0)**2 + (posgas[:,2] - z0)**2) >= 0.)
@@ -461,16 +463,18 @@ for g in gals:
 
         nb_part.append(len(mstar[mask]))
         mtot.append(np.sum(mstar[mask]))
-        slists.append(g.slist[mask])
+        #slists.append(g.slist[mask])
         new_pos.append(np.array([x0, y0, z0]))
         new_rad.append(r0)
         gal_ids.append(ii)
 
+        """
         if len(posgas) > 0:
             glists.append(g.glist[mask_gas])
         else:
             glists.append(np.array([]))
-    
+        """
+
         Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0 = get_ang_mtm(mask, posstar, velstar, mstar)
 
         Lxgal.append(Lx)
@@ -492,15 +496,17 @@ for g in gals:
 
                 nb_part.append(len(mstar[mask2]))
                 mtot.append(np.sum(mstar[mask2]))
-                slists.append(g.slist[mask2])
+                #slists.append(g.slist[mask2])
                 new_pos.append(np.array([x2, y2, z2]))
                 new_rad.append(r2)
                 gal_ids.append(ii)
                 
+                """
                 if len(posgas) > 0:
                     glists.append(g.glist[mask2_gas])
                 else:
                     glists.append(np.array([]))
+                """
 
                 Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0 = get_ang_mtm(mask2, posstar, velstar, mstar)
 
@@ -519,6 +525,7 @@ for g in gals:
     print '\n'
     t += 1
     ii += 1
+    gc.collect()
 
 
 ###output = './Gals_m100n1024_kinematics_'+str(snap)+'_corrcm.asc'
@@ -558,8 +565,8 @@ cc = np.array([galID,gmass,mtot,Lxgal,Lygal,Lzgal,vtmean,sigrmean,sigzmean,sigtm
 np.savetxt(output, cc, fmt='%i %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %i', delimiter='\t',header='galID\tMstar\tMstar_r50\tLx\tLy\tLz\tvt\tsigr\tsigz\tsigt\tvsig\tnbPart')
 
 with h5py.File('.Gals_'+model+'_partlists_'+str(snap)+'.h5', 'a') as f:
-    f.create_dataset('slists', data=np.array(slists))
-    f.create_dataset('glists', data=np.array(glists))
+    #f.create_dataset('slists', data=np.array(slists))
+    #f.create_dataset('glists', data=np.array(glists))
     f.create_dataset('gal_ids', data=np.array(gal_ids))
     f.create_dataset('pos', data=np.array(new_pos))
     f.create_dataset('radius', data=np.array(new_rad))
