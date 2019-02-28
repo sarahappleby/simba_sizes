@@ -215,46 +215,46 @@ def get_cm_radius(pos,mass,dx):
     ##############################
     # only if there are 2 galaxies
     if (one_galaxy == 0):
-      dd = 0
-      dens_vol = []
+        dd = 0
+        dens_vol = []
 
-      while ((dr*(1 + dd)) < d_maxs):
-          mask2 = (np.sqrt((pos[:,0]-cm_x_olds1)**2+(pos[:,1]-cm_y_olds1)**2+(pos[:,2]-cm_z_olds1)**2) <= dr*(1 + dd))
-          mass_temp = np.sum(mstar[mask2] )
-          if (dd == 0):
-            volume_i = 4/3.*np.pi*dr**3
-          else:
-            volume_i = 4/3.*np.pi*dr**3*((1+dd)**3 - dd**3 )
+        while ((dr*(1 + dd)) < d_maxs):
+            mask2 = (np.sqrt((pos[:,0]-cm_x_olds1)**2+(pos[:,1]-cm_y_olds1)**2+(pos[:,2]-cm_z_olds1)**2) <= dr*(1 + dd))
+            mass_temp = np.sum(mstar[mask2] )
+            if (dd == 0):
+              volume_i = 4/3.*np.pi*dr**3
+            else:
+              volume_i = 4/3.*np.pi*dr**3*((1+dd)**3 - dd**3 )
 
-          dens_i = mass_temp #/volume_i
-          dens_vol.append(dens_i)
-          dd += 1
+            dens_i = mass_temp #/volume_i
+            dens_vol.append(dens_i)
+            dd += 1
 
-      dens_vol = np.asarray(dens_vol)
-      dens_vol /= 10**9
+        dens_vol = np.asarray(dens_vol)
+        dens_vol /= 10**9
 
-      diff = np.zeros(len(dens_vol) - 1)
-      arr1 = dens_vol[1:]
-      arr2 = dens_vol[:len(dens_vol)-1]
-      diff = (arr1 - arr2)/arr1*100.
+        diff = np.zeros(len(dens_vol) - 1)
+        arr1 = dens_vol[1:]
+        arr2 = dens_vol[:len(dens_vol)-1]
+        diff = (arr1 - arr2)/arr1*100.
 
-      frac_diff = 1.
-      jj = 0
-      idx = []
-      while (len(idx) == 0):
-         idx = np.where(diff < frac_diff*(1+jj))[0]
-         jj += 1
-      radius = dr*(idx[0])
+        frac_diff = 1.
+        jj = 0
+        idx = []
+        while (len(idx) == 0):
+           idx = np.where(diff < frac_diff*(1+jj))[0]
+           jj += 1
+        radius = dr*(idx[0])
 
     if (one_galaxy == 1):
-       radius = -99
+      radius = -99
+
     print 'radius:',radius
 
     if (one_galaxy == 1):
       return cm_x_olds1,cm_y_olds1,cm_z_olds1,radius
     else:
       return cm_x_olds1,cm_y_olds1,cm_z_olds1,radius, cm_x_olds2,cm_y_olds2,cm_z_olds2,radius2
-
 
 
 def get_ang_mtm(mask, pos, vel, mass):
@@ -329,8 +329,7 @@ def get_ang_mtm(mask, pos, vel, mass):
     else:
         Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0 = [-99]*9
 
-    return 
-        Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0
+    return Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0
         
 
 # ---------------------------
@@ -364,7 +363,7 @@ ppos = readsnap(snapfile,'pos','gas',units=0,suppress=1)/h      #/h/1000.-> in M
 pvel = readsnap(snapfile,'vel','gas',units=0,suppress=1)  # in km/s
 h1 = readsnap(snapfile,'NeutralHydrogenAbundance','gas',units=0,suppress=1)  # in km/s
 """
-gpos = readsnap(snapfile,'pos','gas',units=0,suppress=1)/h
+gaspos = readsnap(snapfile,'pos','gas',units=0,suppress=1)/h
 pmass = readsnap(snapfile,'mass','star',units=1,suppress=1)/h  # note the h^-1 from Gadget units
 ppos = readsnap(snapfile,'pos','star',units=0,suppress=1)/h      #/h/1000.-> in Mpc; otherwise in kpc comoving: max 50Mpc/h
 pvel = readsnap(snapfile,'vel','star',units=0,suppress=1)  # in km/s
@@ -400,6 +399,9 @@ nb_part = []
 
 slists = []
 glists = []
+new_pos = []
+new_rad = []
+gal_ids = []
 
 t = 0
 dx = 1.  # bin size in [kpc] to get the max density
@@ -425,7 +427,7 @@ for g in gals:
     posstar = np.array([ppos[k] for k in g.slist])
     velstar = np.array([pvel[k] for k in g.slist])
 
-    posgas = np.array([gpos[k] for k in g.glist])
+    posgas = np.array([gaspos[k] for k in g.glist])
 
     if (len(mstar) > 0):
         min_x = np.min(posstar[:,0])
@@ -440,49 +442,35 @@ for g in gals:
         binz = np.int((max_z - min_z)/dx)
         print 'bin x,y,z:',binx,biny,binz 
 
+        print 'getting the new center of mass'
         cm = get_cm_radius(posstar,mstar,dx)
-        if len(cm) == 8:
-            x0,y0,z0,r0, x2,y2,z2,r2 = cm
+
         if len(cm) == 4:
-            x0,y0,z0,r0 = cm
-        
-        if (r0 != -99.):
-            mask = ( ( (posstar[:,0] - x0)**2 + (posstar[:,1] - y0)**2 + (posstar[:,2] - z0)**2) <= r0**2.)
-            mask2 = ( ( (posstar[:,0] - x2)**2 + (posstar[:,1] - y2)**2 + (posstar[:,2] - z2)**2) <= r2**2.)
-
-            mask_gas = (( (posgas[:,0] - x0)**2 + (posgas[:,1] - y0)**2 + (posgas[:,2] - z0)**2) <= r0**2.)
-            mask2_gas = (( (posgas[:,0] - x2)**2 + (posgas[:,1] - y2)**2 + (posgas[:,2] - z2)**2) <= r2**2.)
-
-            if len(mstar[mask2]) > 256:
-              nb_part.append(len(mstar[mask2]))
-              mtot.append(np.sum(mstar[mask2]))
-              slists.append(g.slist[mask2])
-              glists.append(g.glist[mask2_gas])
-
-              Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0 = get_ang_mtm(mask2, posstar, velstar, mstar)
-
-              Lxgal.append(Lx)
-              Lygal.append(Ly)
-              Lzgal.append(Lz)
-
-              vrmean.append(vrmean0)
-              vzmean.append(vzmean0)
-              vtmean.append(vtmean0)
-
-              sigrmean.append(sigrmean0)
-              sigzmean.append(sigzmean0)
-              sigtmean.append(sigtmean0)
-
-        else:
             x0,y0,z0 = get_cm(mstar,posstar)
             mask = ( ( (posstar[:,0] - x0)**2 + (posstar[:,1] - y0)**2 + (posstar[:,2] - z0)**2) >= 0.)
-            mask_gas = ( ( (posgas[:,0] - x0)**2 + (posgas[:,1] - y0)**2 + (posgas[:,2] - z0)**2) >= 0.)
+            if len(posgas) > 0:
+                mask_gas = ( ( (posgas[:,0] - x0)**2 + (posgas[:,1] - y0)**2 + (posgas[:,2] - z0)**2) >= 0.)
+
+        elif len(cm) == 8:
+            x0,y0,z0,r0, x2,y2,z2,r2 = cm
+            mask = ( ( (posstar[:,0] - x0)**2 + (posstar[:,1] - y0)**2 + (posstar[:,2] - z0)**2) <= r0**2.)
+            mask2 = ( ( (posstar[:,0] - x2)**2 + (posstar[:,1] - y2)**2 + (posstar[:,2] - z2)**2) <= r2**2.)
+            if len(posgas) > 0:
+                mask_gas = (( (posgas[:,0] - x0)**2 + (posgas[:,1] - y0)**2 + (posgas[:,2] - z0)**2) <= r0**2.)
+                mask2_gas = (( (posgas[:,0] - x2)**2 + (posgas[:,1] - y2)**2 + (posgas[:,2] - z2)**2) <= r2**2.)
 
         nb_part.append(len(mstar[mask]))
         mtot.append(np.sum(mstar[mask]))
         slists.append(g.slist[mask])
-        glists.append(g.glist[mask_gas])
+        new_pos.append(np.array([x0, y0, z0]))
+        new_rad.append(r0)
+        gal_ids.append(ii)
 
+        if len(posgas) > 0:
+            glists.append(g.glist[mask_gas])
+        else:
+            glists.append(np.array([]))
+    
         Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0 = get_ang_mtm(mask, posstar, velstar, mstar)
 
         Lxgal.append(Lx)
@@ -497,10 +485,38 @@ for g in gals:
         sigzmean.append(sigzmean0)
         sigtmean.append(sigtmean0)
 
-        if (t==0):
-            print 'TEST:',len(mstar[mask])
-            print 'len x,l:',len(x),len(l)
+        if len(cm) == 8:
 
+            if len(mstar[mask2]) > 256: # do this only for sufficiently massive satellites
+                print 'found second galaxy'
+
+                nb_part.append(len(mstar[mask2]))
+                mtot.append(np.sum(mstar[mask2]))
+                slists.append(g.slist[mask2])
+                new_pos.append(np.array([x2, y2, z2]))
+                new_rad.append(r2)
+                gal_ids.append(ii)
+                
+                if len(posgas) > 0:
+                    glists.append(g.glist[mask2_gas])
+                else:
+                    glists.append(np.array([]))
+
+                Lx, Ly, Lz, vrmean0, vzmean0, vtmean0, sigrmean0, sigzmean0, sigtmean0 = get_ang_mtm(mask2, posstar, velstar, mstar)
+
+                Lxgal.append(Lx)
+                Lygal.append(Ly)
+                Lzgal.append(Lz)
+
+                vrmean.append(vrmean0)
+                vzmean.append(vzmean0)
+                vtmean.append(vtmean0)
+
+                sigrmean.append(sigrmean0)
+                sigzmean.append(sigzmean0)
+                sigtmean.append(sigtmean0)
+
+    print '\n'
     t += 1
     ii += 1
 
@@ -544,3 +560,6 @@ np.savetxt(output, cc, fmt='%i %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %
 with h5py.File('.Gals_'+model+'_partlists_'+str(snap)+'.h5', 'a') as f:
     f.create_dataset('slists', data=np.array(slists))
     f.create_dataset('glists', data=np.array(glists))
+    f.create_dataset('gal_ids', data=np.array(gal_ids))
+    f.create_dataset('pos', data=np.array(new_pos))
+    f.create_dataset('radius', data=np.array(new_rad))
