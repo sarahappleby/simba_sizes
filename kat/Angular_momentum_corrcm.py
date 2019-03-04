@@ -529,7 +529,7 @@ for g in gals:
 
 
 ###output = './Gals_m100n1024_kinematics_'+str(snap)+'_corrcm.asc'
-output = './Gals_'+model+'_kinematics_'+str(snap)+'_corrcm_2.asc'
+output = './Gals_'+model+'_kinematics_'+str(snap)+'_corrcm_2.h5'
 #output = './Gals_m100n1024_kinematics_'+str(snap)+'_stars_r25.asc'
 #output = './Gals_m100n1024_kinematics_'+str(snap)+'_stars_r50.asc'
 #output = './Gals_m100n1024_kinematics_'+str(snap)+'_stars_r80.asc'
@@ -550,7 +550,7 @@ sigtmean = np.asarray(sigtmean)
 
 print 'shapes:',vtmean.shape,sigrmean.shape,sigzmean.shape,sigtmean.shape
 
-vsig = np.ones(len(gals))
+vsig = np.ones(len(vtmean))
 vsig *=-99.
 mask = (vtmean != -99.)*(sigrmean != -99.)*(sigzmean != -99.)*(sigtmean != -99.)*(sigrmean != 0.)*(sigtmean != 0.)*(sigzmean != 0.)
 vsig[mask] = vtmean[mask]/np.sqrt((sigrmean[mask]**2 + sigzmean[mask]**2 + sigtmean[mask]**2)/3.)
@@ -561,10 +561,24 @@ print 'galID=5:',galID[5],Lxgal[5],Lygal[5],Lzgal[5],vtmean[5],sigrmean[5],sigtm
 
 print 'lengths:',len(galID),len(gmass),len(mtot),len(Lxgal),len(Lygal),len(Lzgal),len(vtmean),len(sigrmean),len(sigzmean),len(sigtmean),len(vsig)
 
-cc = np.array([galID,gmass,mtot,Lxgal,Lygal,Lzgal,vtmean,sigrmean,sigzmean,sigtmean,vsig,nb_part]).T
-np.savetxt(output, cc, fmt='%i %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %i', delimiter='\t',header='galID\tMstar\tMstar_r50\tLx\tLy\tLz\tvt\tsigr\tsigz\tsigt\tvsig\tnbPart')
+#cc = np.array([galID,gmass,mtot,Lxgal,Lygal,Lzgal,vtmean,sigrmean,sigzmean,sigtmean,vsig,nb_part]).T
+#np.savetxt(output, cc, fmt='%i %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %1.8f %i', delimiter='\t',header='galID\tMstar\tMstar_r50\tLx\tLy\tLz\tvt\tsigr\tsigz\tsigt\tvsig\tnbPart')
 
-with h5py.File('.Gals_'+model+'_partlists_'+str(snap)+'.h5', 'a') as f:
+with h5py.File(output, 'a') as f:
+    f.create_dataset('galID', data=np.array(galID))
+    f.create_dataset('Mstar', data=np.array(gmass))
+    f.create_dataset('Mstar_r50', data=np.array(mtot))
+    f.create_dataset('Lx', data=np.array(Lxgal))
+    f.create_dataset('Ly', data=np.array(Lygal))
+    f.create_dataset('Lz', data=np.array(Lzgal))
+    f.create_dataset('vt', data=np.array(vtmean))
+    f.create_dataset('sigr', data=np.array(sigrmean))
+    f.create_dataset('sigz', data=np.array(sigzmean))
+    f.create_dataset('sigt', data=np.array(sigtmean))
+    f.create_dataset('vsig', data=np.array(vsig))
+    f.create_dataset('nbPart', data=np.array(nb_part))
+
+with h5py.File('./Gals_'+model+'_partlists_'+str(snap)+'.h5', 'a') as f:
     #f.create_dataset('slists', data=np.array(slists))
     #f.create_dataset('glists', data=np.array(glists))
     f.create_dataset('gal_ids', data=np.array(gal_ids))
