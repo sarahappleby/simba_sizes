@@ -42,13 +42,6 @@ results_dir = '/home/sapple/simba_sizes/profiles/snap_'+snap+'/'
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
-sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5')
-
-h = sim.simulation.hubble_constant
-redshift = sim.simulation.redshift
-cosmo = FlatLambdaCDM(H0=100*h, Om0=sim.simulation.omega_matter, Ob0=sim.simulation.omega_baryon, Tcmb0=2.73)
-thubble = cosmo.age(redshift).value # in Gyr
-
 # for sample of galaxies and stars
 ssfr_min = 3.e-10
 sm_min = 5.e9
@@ -56,7 +49,7 @@ age_min = 50.
 age_max = 100.
 mass_loss = 1.18
 time = 50.e6
-do_ages = False
+do_ages = True
 
 # for making profiles
 DR = 1.
@@ -64,26 +57,37 @@ factor = 2.
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 bins = np.arange(0., 2., 0.2)
 
-with h5py.File('/home/sapple/simba_sizes/sizes/data/'+model+'_'+wind+'_'+snap+'_data.h5', 'r') as f:
-    gal_rad = f['halfmass'].value
+sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5', LoadHalo=False)
+
+h = sim.simulation.hubble_constant
+redshift = sim.simulation.redshift
+cosmo = FlatLambdaCDM(H0=100*h, Om0=sim.simulation.omega_matter, Ob0=sim.simulation.omega_baryon, Tcmb0=2.73)
+thubble = cosmo.age(redshift).value # in Gyr
 
 # load in the caesar galaxy data to make an initial cut of star forming galaxies
-gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.central_galaxies])
-gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.central_galaxies])
-gal_pos = np.array([i.pos.in_units('kpc') for i in sim.central_galaxies])
-#gal_rad = np.array([i.radii['total_half_mass'].in_units('kpc') for i in sim.central_galaxies])
-gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.central_galaxies])
+gal_cent = np.array([i.central for i in sim.galaxies])
+gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
+gal_bm = np.array([i.masses['bh'].in_units('Msun') for i in sim.galaxies])
+gal_pos = np.array([i.pos.in_units('kpc') for i in sim.galaxies])
+#gal_rad = np.array([i.radii['total_half_mass'].in_units('kpc') for i in sim.galaxies])
+gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
 gal_ssfr = gal_sfr / gal_sm
 
 sm_mask = gal_sm > sm_min
 ssfr_mask = gal_ssfr > ssfr_min
-gal_ids = np.arange(0, len(sim.central_galaxies))[ssfr_mask*sm_mask]
+gal_ids = np.arange(0, len(sim.galaxies))[ssfr_mask*sm_mask*gal_cent]
+
+print 'Identified ' + str(len(gal_ids)) + ' galaxies'
+
+with h5py.File('/home/sapple/simba_sizes/sizes/data/'+model+'_'+wind+'_'+snap+'_data.h5', 'r') as f:
+	gal_rad = f['halfmass'].value
 
 # load in star particle data with readsnap
 star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / h
 star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0)
 star_tform = readsnap(snapfile, 'age', 'star', suppress=1, units=1) # expansion times at time of formation
+
 
 ssfr_profiles = np.zeros((len(gal_ids), 10))
 sm_profiles = np.zeros((len(gal_ids), 10))
@@ -93,8 +97,10 @@ len_mask = np.array([True for i in range(len(gal_ids))])
 
 for i in range(len(gal_ids)):
 
-	slist = sim.central_galaxies[gal_ids[i]].slist
+	print 'Galaxy ' +str(gal_ids[i])
+	slist = sim.galaxies[gal_ids[i]].slist
 	if do_ages:
+		print 'Find stellar ages'
 		# find ages of galaxy stars
 		tform = star_tform[slist]
 		ages = tage(cosmo, thubble, tform) * 1000. # get star ages in Myr
@@ -117,6 +123,7 @@ for i in range(len(gal_ids)):
 	NR = int(round(r_max / DR))
 	if NR < 5:
 		len_mask[i] = False
+		print 'Galaxy ' + str(gal_ids[i]) + ' too small (below 5 kpc)'
 		continue
 
 	pos -= center_of_quantity(pos, mass)
@@ -125,12 +132,10 @@ for i in range(len(gal_ids)):
 	mass = mass[r < r_max ]
 	vel = vel[r < r_max ]
 	pos = pos[r < r_max ]
-        ages_mask = np.array(ages_mask)[r < r_max]
-        r = r[r < r_max]
+	ages_mask = np.array(ages_mask)[r < r_max]
+	r = r[r < r_max]
 
-	# 2. get axis and angle of rotation
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
-	# 3. rotate positions and velocities
 	pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
 	plot_name = results_dir + 'images/gal_'+str(gal_ids[i]) + '.png'
 	make_image(pos[:, 0], pos[:, 1], mass, plot_name)
@@ -142,6 +147,12 @@ for i in range(len(gal_ids)):
 		mask = (r >= j*DR)*(r < (j+1)*DR)
 		profile[j] = np.sum(mass[mask])
 		ages_profile[j] = np.sum(mass[mask*ages_mask])
+		if (j==0):
+			profile[j] /= np.pi*DR*DR
+			ages_profile /= np.pi*DR*DR
+		else:
+			profile[j] /= np.pi*(DR*DR*(j+1)*(j+1) - DR*DR*j*j)
+			ages_profile[j] /= np.pi*(DR*DR*(j+1)*(j+1) - DR*DR*j*j)
 	# divide by 50Myr to get SFR in last 50Myr with 18% instantaneous mass loss
 	ssfr_profile = ages_profile*mass_loss / time
 	sm_frac = profile / total_mass
@@ -152,13 +163,13 @@ for i in range(len(gal_ids)):
 
 	plt.semilogy(r_plot,profile)
 	plt.xlabel('R (kpc)')
-	plt.ylabel('M_* (Msun)')
+	plt.ylabel('M* surface density (Msun/kpc^2)')
 	plt.savefig(results_dir+'profiles/sm_profile_gal_'+str(gal_ids[i])+'.png')
 	plt.clf()
 
 	plt.plot(r_plot,ssfr_profile)
 	plt.xlabel('R (kpc)')
-	plt.ylabel('sSFR (Msun/yr)')
+	plt.ylabel('sSFR surface density (Msun/yr kpc^2)')
 	plt.savefig(results_dir+'profiles/ssfr_profile_gal_'+str(gal_ids[i])+'.png')
 	plt.clf()
 
@@ -191,21 +202,21 @@ sm_frac_median = np.percentile(sm_frac_profiles, 50, axis=0)
 
 plt.plot(bins+0.1, sm_median, marker='.', markersize=2)
 plt.xlabel('R half *')
-plt.ylabel('M* (Msun)')
+plt.ylabel('M* surface density (Msun/kpc^2)')
 plt.fill_between(bins+0.1, sm_lower, sm_higher, facecolor='blue', alpha=0.3)
 plt.savefig(results_dir+'sm_profile.png')
 plt.clf()
 
 plt.plot(bins+0.1, sm_frac_median, marker='.', markersize=2)
 plt.xlabel('R half *')
-plt.ylabel('M* fraction')
+plt.ylabel('M* surface density fraction (kpc^-2)')
 plt.fill_between(bins+0.1, sm_frac_lower, sm_frac_higher, facecolor='blue', alpha=0.3)
 plt.savefig(results_dir+'sm_frac_profile.png')
 plt.clf()
 
 plt.plot(bins+0.1, ssfr_median, marker='.', markersize=2)
 plt.xlabel('R half *')
-plt.ylabel('M* fraction')
+plt.ylabel('sSFR surface density (Msun /yr kpc^2)')
 plt.fill_between(bins+0.1, ssfr_lower, ssfr_higher, facecolor='blue', alpha=0.3)
 plt.savefig(results_dir+'ssfr_profile.png')
 plt.clf()
