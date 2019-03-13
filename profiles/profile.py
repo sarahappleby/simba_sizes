@@ -5,20 +5,23 @@ from projection import *
 import numpy as np 
 from readgadget import readsnap
 import caesar
+import pygad as pg
 from astropy.cosmology import FlatLambdaCDM
 import matplotlib.pyplot as plt
 import h5py
+import os
 
 from profile_methods import *
 
-model = 'm50n512'
+model = 'm100n1024'
 wind = 's50j7k'
-snap = '078'
+snap = '151'
 
-results_dir = '/home/sapple/simba_sizes/profiles/snap_'+snap+'/'
+results_dir = '/home/sapple/simba_sizes/profiles/'+model+'/snap_'+snap+'/'
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
+s = pg.Snap(snapfile)
 sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5', LoadHalo=False)
 
 h = sim.simulation.hubble_constant
@@ -58,8 +61,12 @@ gal_ids = np.arange(0, len(sim.galaxies))[ssfr_mask*sm_mask*gal_cent]
 
 print 'Identified ' + str(len(gal_ids)) + ' galaxies'
 
-with h5py.File('/home/sapple/simba_sizes/sizes/data/'+model+'_'+wind+'_'+snap+'_data.h5', 'r') as f:
-	gal_rad = f['halfmass'].value
+rad_file = '/home/sapple/simba_sizes/sizes/data/'+model+'_'+wind+'_'+snap+'_data.h5'
+if os.path.isfile(rad_file):
+	with h5py.File(rad_file, 'r') as f:
+		gal_rad = f['halfmass'].value
+else:
+	gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
 
 # load in star particle data with readsnap
 star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
@@ -67,10 +74,19 @@ star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / h
 star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0)
 star_tform = readsnap(snapfile, 'age', 'star', suppress=1, units=1) # expansion times at time of formation
 
+gas_pos = readsnap(snapfile, 'pos', 'gas', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
+gas_mass = readsnap(snapfile, 'mass', 'gas', suppress=1, units=1) / h
+gas_vels = readsnap(snapfile, 'vel', 'gas', suppress=1, units=0)
 gas_sfr = readsnap(snapfile, 'sfr', 'gas', suppress=1, units=1)
+abundance_h1 = s.gas['NeutralHydrogenAbundance']
+abundance_h2 = s.gas['fh2']
 
 gas_sfr_profiles = np.zeros((len(gal_ids), 10))
+gas_ssfr_profiles = np.zeros((len(gal_ids), 10))
+h1_profiles = np.zeros((len(gal_ids), 10))
+h2_profiles = np.zeros((len(gal_ids), 10))
 star_sfr_profiles = np.zeros((len(gal_ids), 10))
+star_ssfr_profiles = np.zeros((len(gal_ids), 10))
 sm_profiles = np.zeros((len(gal_ids), 10))
 sm_frac_profiles = np.zeros((len(gal_ids), 10))
 
@@ -124,6 +140,11 @@ for i in range(len(gal_ids)):
 	pos = pos[r < r_max ]
 	ages_mask = np.array(ages_mask)[r < r_max]
 	r = r[r < r_max]
+	if len(r) == 0:
+		print 'No particles within max radius - problem with center of mass'
+		rad_mask[i] = False
+		continue
+
 
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 	pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
@@ -132,9 +153,10 @@ for i in range(len(gal_ids)):
 	r = np.linalg.norm(pos[:, [0, 1]], axis=1)
 
 	sm_profile = make_profile(NR, DR, r, mass)
-	young_profile = make_profle(NR, DR, r[ages_mask], mass[ages_mask])
+	young_profile = make_profile(NR, DR, r[ages_mask], mass[ages_mask])
 	# divide by 50Myr to get SFR in last 50Myr with 18% instantaneous mass loss
 	star_sfr_profile = young_profile*mass_loss / time
+	star_ssfr_profile = star_sfr_profile / sm_profile
 	sm_frac = sm_profile / np.sum(mass)
 
 	"""
@@ -142,10 +164,12 @@ for i in range(len(gal_ids)):
 
 	"""
 
-	pos = star_pos[glist]
-	vel = star_vels[glist]
-	mass = star_mass[glist]
+	pos = gas_pos[glist]
+	vel = gas_vels[glist]
+	mass = gas_mass[glist]
 	sfr = gas_sfr[glist]
+	h1 = abundance_h1[glist]
+	h2 = abundance_h2[glist]
 
 	pos -= center_of_quantity(pos, mass)
 	vel -= center_of_quantity(vel, mass)
@@ -154,6 +178,8 @@ for i in range(len(gal_ids)):
 	vel = vel[r < r_max ]
 	pos = pos[r < r_max ]
 	sfr = sfr[r < r_max]
+	h1 = h1[r < r_max]
+	h2 = h2[r < r_max]
 	r = r[r < r_max]
 
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
@@ -163,7 +189,9 @@ for i in range(len(gal_ids)):
 	r = np.linalg.norm(pos[:, [0, 1]], axis=1)
 
 	gas_sfr_profile = make_profile(NR, DR, r, sfr)
-
+	gas_ssfr_profile = gas_sfr_profile / sm_profile#
+	h1_profile = make_profile(NR, DR, r, h1*mass)
+	h2_profile = make_profile(NR, DR, r, h2*mass)
 	"""
 	Plotting and binning:
 
@@ -185,35 +213,75 @@ for i in range(len(gal_ids)):
 	plt.savefig(results_dir+'profiles/star_sfr_profile_gal_'+str(gal_ids[i])+'.png')
 	plt.clf()
 
+	plt.plot(r_plot,np.log10(star_ssfr_profile))
+	plt.xlabel('R (kpc)')
+	plt.ylabel('log sSFR (yr^-1')
+	plt.savefig(results_dir+'profiles/star_ssfr_profile_gal_'+str(gal_ids[i])+'.png')
+	plt.clf()	
+
 	plt.plot(r_plot,gas_sfr_profile)
 	plt.xlabel('R (kpc)')
 	plt.ylabel('SFR surface density (Msun/yr kpc^2)')
 	plt.savefig(results_dir+'profiles/gas_sfr_profile_gal_'+str(gal_ids[i])+'.png')
 	plt.clf()
 
+	plt.plot(r_plot,np.log10(gas_ssfr_profile))
+	plt.xlabel('R (kpc)')
+	plt.ylabel('log sSFR (yr^-1)')
+	plt.savefig(results_dir+'profiles/gas_ssfr_profile_gal_'+str(gal_ids[i])+'.png')
+	plt.clf()
+
+	plt.plot(r_plot,h1_profile)
+	plt.xlabel('R (kpc)')
+	plt.ylabel('HI surface density (Msun / kpc^2)')
+	plt.savefig(results_dir+'profiles/h1_profile_gal_'+str(gal_ids[i])+'.png')
+	plt.clf()
+
+	plt.plot(r_plot,h2_profile)
+	plt.xlabel('R (kpc)')
+	plt.ylabel('HII surface density (Msun / kpc^2)')
+	plt.savefig(results_dir+'profiles/h2_profile_gal_'+str(gal_ids[i])+'.png')
+	plt.clf()
 
 	x = np.arange(0, NR) / r_max*factor
 	digitized = np.digitize(x, bins)
 	sm_bin = [sm_profile[digitized == j] for j in range(1, len(bins) +1)]
 	star_sfr_bin = [star_sfr_profile[digitized == j] for j in range(1, len(bins) +1)]
+	star_ssfr_bin = [star_ssfr_profile[digitized == j] for j in range(1, len(bins) +1)]
 	sm_frac_bin = [sm_frac[digitized == j] for j in range(1, len(bins) +1)]
 	gas_sfr_bin = [gas_sfr_profile[digitized == j] for j in range(1, len(bins) + 1)]
-	
+	gas_ssfr_bin = [gas_ssfr_profile[digitized == j] for j in range(1, len(bins) + 1)]
+	h1_bin = [h1_profile[digitized == j] for j in range(1, len(bins) + 1)]
+	h2_bin = [h2_profile[digitized == j] for j in range(1, len(bins) + 1)]
+
 	star_sfr_profiles[i] = np.array([np.sum(j) for j in star_sfr_bin])
+	star_ssfr_profiles[i] = np.array([np.sum(j) for j in star_ssfr_bin])
 	sm_profiles[i] = np.array([np.sum(j) for j in sm_bin])
 	sm_frac_profiles[i] = np.array([np.sum(j) for j in sm_frac_bin])
-	gas_sfr_profiles[i] = np.array([np.sum(j) for j in gas_sfr_profile])
+	gas_sfr_profiles[i] = np.array([np.sum(j) for j in gas_sfr_bin])
+	gas_ssfr_profiles[i] = np.array([np.sum(j) for j in gas_ssfr_bin])
+	h1_profiles[i] = np.array([np.sum(j) for j in h1_bin])	
+	h2_profiles[i] = np.array([np.sum(j) for j in h2_bin])
+
 
 sm_profiles = sm_profiles[rad_mask]
 sm_frac_profiles = sm_frac_profiles[rad_mask]
 star_sfr_profiles = star_sfr_profiles[len_mask*rad_mask]
+star_ssfr_profiles = star_ssfr_profiles[len_mask*rad_mask]
 gas_sfr_profiles = gas_sfr_profiles[rad_mask]
+gas_ssfr_profiles = gas_ssfr_profiles[rad_mask]
+h1_profiles = h1_profiles[rad_mask]
+h2_profiles = h2_profiles[rad_mask]
 gal_ids_sm = gal_ids[rad_mask]
 gal_ids_sfr = gal_ids[len_mask*rad_mask]
 
 star_sfr_lower = np.percentile(star_sfr_profiles, 25, axis=0)
 star_sfr_higher = np.percentile(star_sfr_profiles, 75, axis=0)
 star_sfr_median = np.percentile(star_sfr_profiles, 50, axis=0)
+
+star_ssfr_lower = np.percentile(np.log10(star_ssfr_profiles), 25, axis=0)
+star_ssfr_higher = np.percentile(np.log10(star_ssfr_profiles), 75, axis=0)
+star_ssfr_median = np.percentile(np.log10(star_ssfr_profiles), 50, axis=0)
 
 sm_lower = np.percentile(sm_profiles, 25, axis=0)
 sm_higher = np.percentile(sm_profiles, 75, axis=0)
@@ -227,10 +295,23 @@ gas_sfr_lower = np.percentile(gas_sfr_profiles, 25, axis=0)
 gas_sfr_higher = np.percentile(gas_sfr_profiles, 75, axis=0)
 gas_sfr_median = np.percentile(gas_sfr_profiles, 50, axis=0)
 
+gas_ssfr_lower = np.percentile(np.log10(gas_ssfr_profiles), 25, axis=0)
+gas_ssfr_higher = np.percentile(np.log10(gas_ssfr_profiles), 75, axis=0)
+gas_ssfr_median = np.percentile(np.log10(gas_ssfr_profiles), 50, axis=0)
+
+h1_lower = np.percentile(h1_profiles, 25, axis=0)
+h1_higher = np.percentile(h1_profiles, 75, axis=0)
+h1_median = np.percentile(h1_profiles, 50, axis=0)
+
+h2_lower = np.percentile(h2_profiles, 25, axis=0)
+h2_higher = np.percentile(h2_profiles, 75, axis=0)
+h2_median = np.percentile(h2_profiles, 50, axis=0)
+
 plt.plot(bins+0.1, sm_median, marker='.', markersize=2)
 plt.xlabel('R half *')
 plt.ylabel('M* surface density (Msun/kpc^2)')
 plt.fill_between(bins+0.1, sm_lower, sm_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sm))+' galaxies')
 plt.savefig(results_dir+'sm_profile.png')
 plt.clf()
 
@@ -238,6 +319,7 @@ plt.plot(bins+0.1, sm_frac_median, marker='.', markersize=2)
 plt.xlabel('R half *')
 plt.ylabel('M* surface density fraction (kpc^-2)')
 plt.fill_between(bins+0.1, sm_frac_lower, sm_frac_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sm))+' galaxies')
 plt.savefig(results_dir+'sm_frac_profile.png')
 plt.clf()
 
@@ -245,19 +327,57 @@ plt.plot(bins+0.1, star_sfr_median, marker='.', markersize=2)
 plt.xlabel('R half *')
 plt.ylabel('SFR surface density (Msun /yr kpc^2)')
 plt.fill_between(bins+0.1, star_sfr_lower, star_sfr_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sfr))+' galaxies')
 plt.savefig(results_dir+'star_sfr_profile.png')
+plt.clf()
+
+plt.plot(bins+0.1, star_ssfr_median, marker='.', markersize=2)
+plt.xlabel('R half *')
+plt.ylabel('log sSFR (yr^-1)')
+plt.fill_between(bins+0.1, star_ssfr_lower, star_ssfr_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sfr))+' galaxies')
+plt.savefig(results_dir+'star_ssfr_profile.png')
 plt.clf()
 
 plt.plot(bins+0.1, gas_sfr_median, marker='.', markersize=2)
 plt.xlabel('R half *')
 plt.ylabel('SFR surface density (Msun /yr kpc^2)')
 plt.fill_between(bins+0.1, gas_sfr_lower, gas_sfr_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sm))+' galaxies')
 plt.savefig(results_dir+'gas_sfr_profile.png')
+plt.clf()
+
+plt.plot(bins+0.1, gas_ssfr_median, marker='.', markersize=2)
+plt.xlabel('R half *')
+plt.ylabel('log sSFR (yr^-1)')
+plt.fill_between(bins+0.1, gas_ssfr_lower, gas_ssfr_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sm))+' galaxies')
+plt.savefig(results_dir+'gas_ssfr_profile.png')
+plt.clf()
+
+plt.plot(bins+0.1, h1_median, marker='.', markersize=2)
+plt.xlabel('R half *')
+plt.ylabel('HI surface density (Msun kpc^2)')
+plt.fill_between(bins+0.1, h1_lower, h1_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sm))+' galaxies')
+plt.savefig(results_dir+'h1_profile.png')
+plt.clf()
+
+plt.plot(bins+0.1, h2_median, marker='.', markersize=2)
+plt.xlabel('R half *')
+plt.ylabel('HII surface density (Msun kpc^2)')
+plt.fill_between(bins+0.1, h2_lower, h2_higher, facecolor='blue', alpha=0.3)
+plt.title(str(len(gal_ids_sm))+' galaxies')
+plt.savefig(results_dir+'h2_profile.png')
 plt.clf()
 
 with h5py.File(results_dir+model+'_'+snap+'_profiles.h5', 'a') as f:
 	f.create_dataset('star_sfr_profile', data=np.array(star_sfr_profiles))
+	f.create_dataset('star_ssfr_profile', data=np.array(star_ssfr_profiles))
 	f.create_dataset('gas_sfr_profile', data=np.array(gas_sfr_profiles))
+	f.create_dataset('gas_ssfr_profile', data=np.array(gas_ssfr_profiles))
+	f.create_dataset('h1_profile', data=np.array(h1_profiles))
+	f.create_dataset('h2_profile', data=np.array(h2_profiles))
 	f.create_dataset('sm_profile', data=np.array(sm_profiles))
 	f.create_dataset('gal_ids', data=np.array(gal_ids_sm))
 	f.create_dataset('gal_ids_young_stars', data=np.array(gal_ids_sfr))
