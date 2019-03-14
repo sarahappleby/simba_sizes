@@ -13,7 +13,7 @@ import os
 
 from profile_methods import *
 
-model = 'm100n1024'
+model = 'm50n512'
 wind = 's50j7k'
 snap = '151'
 
@@ -33,11 +33,12 @@ thubble = cosmo.age(redshift).value # in Gyr
 ssfr_min = 3.e-10
 sm_min = 5.e9
 age_min = 50.
-age_max = 100.
+age_max = 150.
 mass_loss = 1.18
-time = 50.e6
+time = 100.e6
 do_ages = True
 nstar_min = 100
+bh_center = True
 
 # for making profiles
 DR = 1./(h*(1+redshift))
@@ -80,6 +81,8 @@ gas_vels = readsnap(snapfile, 'vel', 'gas', suppress=1, units=0)
 gas_sfr = readsnap(snapfile, 'sfr', 'gas', suppress=1, units=1)
 abundance_h1 = s.gas['NeutralHydrogenAbundance']
 abundance_h2 = s.gas['fh2']
+
+bh_all_pos = s.bh['pos'].in_units_of('kpc')
 
 gas_sfr_profiles = np.zeros((len(gal_ids), 10))
 gas_ssfr_profiles = np.zeros((len(gal_ids), 10))
@@ -132,8 +135,12 @@ for i in range(len(gal_ids)):
 	vel = star_vels[slist]
 	mass = star_mass[slist]
 
-	pos -= center_of_quantity(pos, mass)
+	if not bh_center:
+		pos -= center_of_quantity(pos, mass)
+	else:
+		pos -= bh_all_pos[sim.galaxies[gal_ids[i]].bhlist[0]]
 	vel -= center_of_quantity(vel, mass)
+
 	r = np.linalg.norm(pos, axis=1)
 	mass = mass[r < r_max ]
 	vel = vel[r < r_max ]
@@ -144,7 +151,6 @@ for i in range(len(gal_ids)):
 		print 'No particles within max radius - problem with center of mass'
 		rad_mask[i] = False
 		continue
-
 
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 	pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
@@ -161,7 +167,6 @@ for i in range(len(gal_ids)):
 
 	"""
 	For the gas particles:
-
 	"""
 
 	pos = gas_pos[glist]
@@ -171,8 +176,12 @@ for i in range(len(gal_ids)):
 	h1 = abundance_h1[glist]
 	h2 = abundance_h2[glist]
 
-	pos -= center_of_quantity(pos, mass)
+	if not bh_center:
+		pos -= center_of_quantity(pos, mass)
+	else:
+		pos -= bh_all_pos[sim.galaxies[gal_ids[i]].bhlist[0]]
 	vel -= center_of_quantity(vel, mass)
+
 	r = np.linalg.norm(pos, axis=1)
 	mass = mass[r < r_max ]
 	vel = vel[r < r_max ]
@@ -189,12 +198,12 @@ for i in range(len(gal_ids)):
 	r = np.linalg.norm(pos[:, [0, 1]], axis=1)
 
 	gas_sfr_profile = make_profile(NR, DR, r, sfr)
-	gas_ssfr_profile = gas_sfr_profile / sm_profile#
+	gas_ssfr_profile = gas_sfr_profile / sm_profile
 	h1_profile = make_profile(NR, DR, r, h1*mass)
 	h2_profile = make_profile(NR, DR, r, h2*mass)
+
 	"""
 	Plotting and binning:
-
 	"""
 
 	r_plot = np.arange(0.5*DR, (NR+0.5)*DR, DR) # bin centers
@@ -206,6 +215,12 @@ for i in range(len(gal_ids)):
 	plt.ylabel('M* surface density (Msun/kpc^2)')
 	plt.savefig(results_dir+'profiles/sm_profile_gal_'+str(gal_ids[i])+'.png')
 	plt.clf()
+
+	plt.semilogy(r_plot,sm_frac)
+	plt.xlabel('R (kpc)')
+	plt.ylabel('M* fraction')
+	plt.savefig(results_dir+'profiles/sm_profile_gal_'+str(gal_ids[i])+'.png')
+	plt.clf()	
 
 	plt.plot(r_plot,star_sfr_profile)
 	plt.xlabel('R (kpc)')
