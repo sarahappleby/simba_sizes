@@ -13,7 +13,7 @@ import os
 
 from profile_methods import *
 
-model = 'm50n512'
+model = 'm100n1024'
 wind = 's50j7k'
 snap = '151'
 
@@ -45,7 +45,6 @@ DR = 1./(h*(1+redshift))
 factor = 2.
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 bins = np.arange(0., 2., 0.2)
-
 
 # load in the caesar galaxy data to make an initial cut of star forming galaxies
 gal_cent = np.array([i.central for i in sim.galaxies])
@@ -155,7 +154,7 @@ for i in range(len(gal_ids)):
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 	pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
 	plot_name = results_dir + 'images/gal_'+str(gal_ids[i]) + '_stars.png'
-	make_image(pos[:, 0], pos[:, 1], mass, plot_name)
+	make_image(pos[:, 0], pos[:, 1], mass, plot_name, r_max)
 	r = np.linalg.norm(pos[:, [0, 1]], axis=1)
 
 	sm_profile = make_profile(NR, DR, r, mass)
@@ -194,7 +193,7 @@ for i in range(len(gal_ids)):
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 	pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
 	plot_name = results_dir + 'images/gal_'+str(gal_ids[i]) + '_gas.png'
-	make_image(pos[:, 0], pos[:, 1], mass, plot_name)
+	make_image(pos[:, 0], pos[:, 1], mass, plot_name, r_max)
 	r = np.linalg.norm(pos[:, [0, 1]], axis=1)
 
 	gas_sfr_profile = make_profile(NR, DR, r, sfr)
@@ -290,13 +289,30 @@ h2_profiles = h2_profiles[rad_mask]
 gal_ids_sm = gal_ids[rad_mask]
 gal_ids_sfr = gal_ids[len_mask*rad_mask]
 
-star_sfr_lower = np.percentile(star_sfr_profiles, 25, axis=0)
-star_sfr_higher = np.percentile(star_sfr_profiles, 75, axis=0)
-star_sfr_median = np.percentile(star_sfr_profiles, 50, axis=0)
+if len(star_sfr_profiles) != 0:
+	star_sfr_lower = np.percentile(star_sfr_profiles, 25, axis=0)
+	star_sfr_higher = np.percentile(star_sfr_profiles, 75, axis=0)
+	star_sfr_median = np.percentile(star_sfr_profiles, 50, axis=0)
 
-star_ssfr_lower = np.percentile(np.log10(star_ssfr_profiles), 25, axis=0)
-star_ssfr_higher = np.percentile(np.log10(star_ssfr_profiles), 75, axis=0)
-star_ssfr_median = np.percentile(np.log10(star_ssfr_profiles), 50, axis=0)
+	star_ssfr_lower = np.percentile(np.log10(star_ssfr_profiles), 25, axis=0)
+	star_ssfr_higher = np.percentile(np.log10(star_ssfr_profiles), 75, axis=0)
+	star_ssfr_median = np.percentile(np.log10(star_ssfr_profiles), 50, axis=0)
+
+	plt.plot(bins+0.1, star_sfr_median, marker='.', markersize=2)
+	plt.xlabel('R half *')
+	plt.ylabel('SFR surface density (Msun /yr kpc^2)')
+	plt.fill_between(bins+0.1, star_sfr_lower, star_sfr_higher, facecolor='blue', alpha=0.3)
+	plt.title(str(len(gal_ids_sfr))+' galaxies')
+	plt.savefig(results_dir+'star_sfr_profile.png')
+	plt.clf()
+
+	plt.plot(bins+0.1, star_ssfr_median, marker='.', markersize=2)
+	plt.xlabel('R half *')
+	plt.ylabel('log sSFR (yr^-1)')
+	plt.fill_between(bins+0.1, star_ssfr_lower, star_ssfr_higher, facecolor='blue', alpha=0.3)
+	plt.title(str(len(gal_ids_sfr))+' galaxies')
+	plt.savefig(results_dir+'star_ssfr_profile.png')
+	plt.clf()
 
 sm_lower = np.percentile(sm_profiles, 25, axis=0)
 sm_higher = np.percentile(sm_profiles, 75, axis=0)
@@ -336,22 +352,6 @@ plt.ylabel('M* surface density fraction (kpc^-2)')
 plt.fill_between(bins+0.1, sm_frac_lower, sm_frac_higher, facecolor='blue', alpha=0.3)
 plt.title(str(len(gal_ids_sm))+' galaxies')
 plt.savefig(results_dir+'sm_frac_profile.png')
-plt.clf()
-
-plt.plot(bins+0.1, star_sfr_median, marker='.', markersize=2)
-plt.xlabel('R half *')
-plt.ylabel('SFR surface density (Msun /yr kpc^2)')
-plt.fill_between(bins+0.1, star_sfr_lower, star_sfr_higher, facecolor='blue', alpha=0.3)
-plt.title(str(len(gal_ids_sfr))+' galaxies')
-plt.savefig(results_dir+'star_sfr_profile.png')
-plt.clf()
-
-plt.plot(bins+0.1, star_ssfr_median, marker='.', markersize=2)
-plt.xlabel('R half *')
-plt.ylabel('log sSFR (yr^-1)')
-plt.fill_between(bins+0.1, star_ssfr_lower, star_ssfr_higher, facecolor='blue', alpha=0.3)
-plt.title(str(len(gal_ids_sfr))+' galaxies')
-plt.savefig(results_dir+'star_ssfr_profile.png')
 plt.clf()
 
 plt.plot(bins+0.1, gas_sfr_median, marker='.', markersize=2)

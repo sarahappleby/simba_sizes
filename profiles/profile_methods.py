@@ -1,7 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 
-def make_image(posx, posy, weight, filename, Npixels=100):
+def make_image(posx, posy, weight, filename, rcirc=None, Npixels=100):
 	xmin = -20.
 	xmax = 20.
 	im,xedges,yedges=np.histogram2d(posx,posy,bins=(Npixels,Npixels),weights=weight)
@@ -12,6 +12,10 @@ def make_image(posx, posy, weight, filename, Npixels=100):
 
 	plt.imshow(np.log10(im.transpose()+0.0001),extent=extent, interpolation='nearest',cmap='magma',
 				vmin=v_min,vmax=v_max, origin="lower")
+	if rcirc:
+		plt.title('Radius: '+ str(rcirc))
+	plt.plot(0., 0., c='w', ms=15, marker='.')
+	plt.colorbar()
 	plt.savefig(filename)
 	plt.clf()
 
