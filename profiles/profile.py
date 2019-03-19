@@ -13,9 +13,9 @@ import os
 
 from profile_methods import *
 
-model = 'm100n1024'
+model = 'm50n512'
 wind = 's50j7k'
-snap = '151'
+snap = '078'
 
 results_dir = '/home/sapple/simba_sizes/profiles/'+model+'/snap_'+snap+'/'
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
@@ -154,7 +154,7 @@ for i in range(len(gal_ids)):
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 	pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
 	plot_name = results_dir + 'images/gal_'+str(gal_ids[i]) + '_stars.png'
-	make_image(pos[:, 0], pos[:, 1], mass, plot_name, r_max)
+	make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, r_max)
 	r = np.linalg.norm(pos[:, [0, 1]], axis=1)
 
 	sm_profile = make_profile(NR, DR, r, mass)
@@ -167,7 +167,6 @@ for i in range(len(gal_ids)):
 	"""
 	For the gas particles:
 	"""
-
 	pos = gas_pos[glist]
 	vel = gas_vels[glist]
 	mass = gas_mass[glist]
@@ -176,7 +175,9 @@ for i in range(len(gal_ids)):
 	h2 = abundance_h2[glist]
 
 	if not bh_center:
-		pos -= center_of_quantity(pos, mass)
+		old_pos = star_pos[slist] # center on star center of mass
+		old_mass = star_mass[slist]
+		pos -= center_of_quantity(old_pos, old_mass)
 	else:
 		pos -= bh_all_pos[sim.galaxies[gal_ids[i]].bhlist[0]]
 	vel -= center_of_quantity(vel, mass)
@@ -193,7 +194,7 @@ for i in range(len(gal_ids)):
 	axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 	pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
 	plot_name = results_dir + 'images/gal_'+str(gal_ids[i]) + '_gas.png'
-	make_image(pos[:, 0], pos[:, 1], mass, plot_name, r_max)
+	make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, r_max)
 	r = np.linalg.norm(pos[:, [0, 1]], axis=1)
 
 	gas_sfr_profile = make_profile(NR, DR, r, sfr)
@@ -218,7 +219,7 @@ for i in range(len(gal_ids)):
 	plt.semilogy(r_plot,sm_frac)
 	plt.xlabel('R (kpc)')
 	plt.ylabel('M* fraction')
-	plt.savefig(results_dir+'profiles/sm_profile_gal_'+str(gal_ids[i])+'.png')
+	plt.savefig(results_dir+'profiles/sm_frac_profile_gal_'+str(gal_ids[i])+'.png')
 	plt.clf()	
 
 	plt.plot(r_plot,star_sfr_profile)

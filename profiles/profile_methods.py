@@ -35,7 +35,7 @@ def make_profile(NR, DR, r, quantity):
 	# make profile of total mass of stars with ages 50Myr - 100Myr
 	for j in range(0, NR):
 		mask = (r >= j*DR)*(r < (j+1)*DR)
-		profile[j] = np.sum(quantity)
+		profile[j] = np.sum(quantity[mask])
 		if (j==0):
 			profile[j] /= np.pi*DR*DR
 		else:
