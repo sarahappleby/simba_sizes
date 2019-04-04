@@ -35,9 +35,38 @@ def make_profile(NR, DR, r, quantity):
 	# make profile of total mass of stars with ages 50Myr - 100Myr
 	for j in range(0, NR):
 		mask = (r >= j*DR)*(r < (j+1)*DR)
-		profile[j] = np.sum(quantity[mask])
+		profile[j] = np.sum(quantity)
 		if (j==0):
 			profile[j] /= np.pi*DR*DR
 		else:
 			profile[j] /= np.pi*(DR*DR*(j+1)*(j+1) - DR*DR*j*j)
 	return profile
+
+def plot_profile(r, profile, filename, ylabel, xlabel='R half *', title=''):
+	plt.plot(r, profile, linestyle='--', marker='.')
+	plt.ylabel(ylabel)
+	plt.xlabel(xlabel)
+	plt.title(title)
+	plt.xlim(0, )
+	plt.savefig(filename)
+	plt.clf()
+
+def bin_data(samples, bins):
+	"""
+	Bin samples across a range into bins.
+	Args:
+		samples (ndarray): array of samples
+		bins(ndarray): bin values, indicating lower edge of bin
+	Returns:
+		binned(list): samples sorted into bins
+	"""
+	width = bins[1] - bins[0]
+	binned = []
+	for i in range(len(bins)):
+		data = []
+		for j in range(len(samples)):
+			if (samples[j] > bins[i]) & (samples[j] < bins[i]+width):
+				data.append(samples[j])
+		if not len(data) == 0: binned.append(data)
+		else: binned.append([])
+	return binned
