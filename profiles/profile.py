@@ -27,7 +27,7 @@ rotate_galaxies = False
 mass_bins = [10., 10.5, 11.]
 bin_labels = ['10.0 - 10.5', '10.5 - 11.0', '> 11.0']
 
-n = 20
+n = 10
 factor = 2.
 dr = factor / n
 vec = np.array([0, 1, 0]) # face-on projection to collapse the z direction
@@ -141,7 +141,9 @@ for m in range(len(mass_bins)):
 
 	use_star_m = np.zeros((len(gal_ids_use), n))
 	use_star_sfr = np.zeros((len(gal_ids_use), n))
+	use_star_ssfr = np.zeros((len(gal_ids_use), n))
 	use_gas_sfr = np.zeros((len(gal_ids_use), n))
+	use_gas_ssfr = np.zeros((len(gal_ids_use), n))
 	use_gas_h1 = np.zeros((len(gal_ids_use), n))
 	use_gas_h2 = np.zeros((len(gal_ids_use), n))
 
@@ -212,9 +214,12 @@ for m in range(len(mass_bins)):
 		use_star_m[i] = make_profile(n, dr, r, mass)
 		use_star_sfr[i] = make_profile(n, dr, r[ages_mask], mass[ages_mask]) * mass_loss / time
 
+		use_star_ssfr[i] = use_star_sfr[i] / use_star_m[i]
+		use_star_ssfr[i][np.where(use_star_ssfr[i] == 0.)] = 1.e-20
+
 		plot_profile(bins+(dr*0.5), use_star_m[i], results_dir+'profiles/sm_profile_gal_'+str(gal_ids_use[i])+'.png', 'M* surface density', title=title)
 		plot_profile(bins+(dr*0.5), use_star_sfr[i], results_dir+'profiles/star_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
-		plot_profile(bins+(dr*0.5), np.log10(use_star_sfr[i] / use_star_m[i]), results_dir+'profiles/star_ssfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'sSFR', title=title)
+		plot_profile(bins+(dr*0.5), np.log10(use_star_ssfr[i]), results_dir+'profiles/star_ssfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'log sSFR', title=title, ylim=-13)
 
 		"""
 		For the gas particles:
@@ -265,68 +270,13 @@ for m in range(len(mass_bins)):
 			use_gas_h1[i] /= np.sum(use_gas_h1[i])
 			use_gas_h2[i] /= np.sum(use_gas_h2[i])
 
+		use_gas_ssfr[i] = use_gas_sfr[i] / use_star_m[i]
+		use_gas_ssfr[i][np.where(use_gas_ssfr[i] == 0.)] = 1.e-20
+
 		plot_profile(bins+(dr*0.5), use_gas_sfr[i], results_dir+'profiles/gas_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
-		plot_profile(bins+(dr*0.5), np.log10(use_gas_sfr[i] / use_star_m[i]), results_dir+'profiles/gas_ssfr_profile_gal_'+str(gal_ids[i])+'.png', 'sSFR', title=title)
+		plot_profile(bins+(dr*0.5), np.log10(use_gas_ssfr[i]), results_dir+'profiles/gas_ssfr_profile_gal_'+str(gal_ids[i])+'.png', 'log sSFR', title=title, ylim=-13)
 		plot_profile(bins+(dr*0.5), use_gas_h1[i], results_dir+'profiles/gas_h1_profile_gal_'+str(gal_ids_use[i])+'.png', 'HI fraction surface density', title=title)
 		plot_profile(bins+(dr*0.5), use_gas_h2[i], results_dir+'profiles/gas_h2_profile_gal_'+str(gal_ids_use[i])+'.png', 'HII fraction surface density', title=title)
-
-	print '\n'
-	print 'Finding medians and means for mass bin ' + bin_labels[m]
-
-	sm_median[m] = np.percentile(use_star_m, '50', axis=0)
-	sm_lower[m] = np.percentile(use_star_m, '25', axis=0)
-	sm_higher[m] = np.percentile(use_star_m, '75', axis=0)
-	sm_mean[m] = np.mean(use_star_m, axis=0)
-	sm_sigma[m] = np.std(use_star_m, axis=0)
-
-	star_sfr_median[m] = np.percentile(use_star_sfr, '50', axis=0)
-	star_sfr_lower[m] = np.percentile(use_star_sfr, '25', axis=0)
-	star_sfr_higher[m] = np.percentile(use_star_sfr, '75', axis=0)
-	star_sfr_mean[m] = np.mean(use_star_sfr, axis=0)
-	star_sfr_sigma[m] = np.std(use_star_sfr, axis=0)
-
-	star_ssfr_median[m] = np.nanpercentile(use_star_sfr / use_star_m, '50', axis=0)
-	star_ssfr_lower[m] = np.nanpercentile(use_star_sfr / use_star_m, '25', axis=0)
-	star_ssfr_higher[m] = np.nanpercentile(use_star_sfr / use_star_m, '75', axis=0)
-	star_ssfr_mean[m] = np.mean(use_star_sfr / use_star_m, axis=0)
-	star_ssfr_sigma[m] = np.std(use_star_sfr / use_star_m, axis=0)
-
-	star_ssfr_median[m][star_ssfr_median[m] == 0.] = 1.e-15
-	star_ssfr_lower[m][star_ssfr_lower[m] == 0.] = 1.e-15
-	star_ssfr_higher[m][star_ssfr_higher[m] == 0.] = 1.e-15
-	star_ssfr_mean[m][star_ssfr_mean[m] == 0.] = 1.e-15
-	star_ssfr_sigma[m][star_ssfr_sigma[m] == 0.] = 1.e-15
-
-
-	gas_sfr_median[m] = np.percentile(use_gas_sfr, '50', axis=0)
-	gas_sfr_lower[m] = np.percentile(use_gas_sfr, '25', axis=0)
-	gas_sfr_higher[m] = np.percentile(use_gas_sfr, '75', axis=0)
-	gas_sfr_mean[m] = np.mean(use_gas_sfr, axis=0)
-	gas_sfr_sigma[m] = np.std(use_gas_sfr, axis=0)
-
-	gas_ssfr_median[m] = np.nanpercentile(use_gas_sfr / use_star_m, '50', axis=0)
-	gas_ssfr_lower[m] = np.nanpercentile(use_gas_sfr / use_star_m, '25', axis=0)
-	gas_ssfr_higher[m] = np.nanpercentile(use_gas_sfr / use_star_m, '75', axis=0)
-	gas_ssfr_mean[m] = np.mean(use_gas_sfr / use_star_m, axis=0)
-	gas_ssfr_sigma[m] = np.std(use_gas_sfr / use_star_m, axis=0)
-
-	gas_ssfr_median[m][gas_ssfr_median[m] == 0.] = 1.e-15
-	gas_ssfr_lower[m][gas_ssfr_lower[m] == 0.] = 1.e-15
-	gas_ssfr_higher[m][gas_ssfr_higher[m] == 0.] = 1.e-15
-	gas_ssfr_mean[m][gas_ssfr_mean[m] == 0.] = 1.e-15
-	gas_ssfr_sigma[m][gas_ssfr_sigma[m] == 0.] = 1.e-15
-
-	gas_h1_median[m] = np.percentile(use_gas_h1, '50', axis=0)
-	gas_h1_lower[m] = np.percentile(use_gas_h1, '25', axis=0)
-	gas_h1_higher[m] = np.percentile(use_gas_h1, '75', axis=0)
-	gas_h1_mean[m] = np.mean(use_gas_h1, axis=0)
-	gas_h1_sigma[m] = np.std(use_gas_h1, axis=0)
-
-	gas_h2_median[m] = np.percentile(use_gas_h2, '50', axis=0)
-	gas_h2_lower[m] = np.percentile(use_gas_h2, '25', axis=0)
-	gas_h2_higher[m] = np.percentile(use_gas_h2, '75', axis=0)
-	gas_h2_mean[m] = np.mean(use_gas_h2, axis=0)
-	gas_h2_sigma[m] = np.std(use_gas_h2, axis=0)
 
 
 	with h5py.File(results_dir+'mask_'+str(m)+'_all_profiles.h5', 'a') as f:
@@ -340,148 +290,3 @@ for m in range(len(mass_bins)):
 	del use_star_m, use_star_sfr, use_gas_sfr, use_gas_h1, use_gas_h2
 	gc.collect()
 	print '\n'
-
-
-for m in range(len(mass_bins)):
-	plt.semilogy(bins+(dr*0.5), sm_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-	plt.fill_between(bins+(dr*0.5), sm_lower[m], sm_higher[m], alpha=0.3)
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('M* surface density (Msun/R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'sm_medians.png')
-plt.clf()
-for m in range(len(mass_bins)):
-	plt.errorbar(bins+(dr*0.5), sm_mean[m], yerr=sm_sigma[m], marker='.', markersize=4, linestyle='--', 
-				label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-plt.yscale('log')
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('M* surface density (Msun/R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'sm_means.png')
-plt.clf()
-
-
-for m in range(len(mass_bins)):
-	plt.plot(bins+(dr*0.5), star_sfr_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-	plt.fill_between(bins+(dr*0.5), star_sfr_lower[m], star_sfr_higher[m], alpha=0.3)
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('SFR surface density (Msun/yr /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'star_sfr_medians.png')
-plt.clf()
-for m in range(len(mass_bins)):
-	plt.errorbar(bins+(dr*0.5), star_sfr_mean[m], yerr=star_sfr_sigma[m], marker='.', markersize=4, linestyle='--', 
-				label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('SFR surface density (Msun/yr /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'star_sfr_means.png')
-plt.clf()
-
-
-for m in range(len(mass_bins)):
-	plt.plot(bins+(dr*0.5), np.log10(star_ssfr_median[m]), marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-	plt.fill_between(bins+(dr*0.5), np.log10(star_ssfr_lower[m]), np.log10(star_ssfr_higher[m]), alpha=0.3)
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('log sSFR (yr^-1)')
-plt.xlim(0, 2)
-plt.ylim(-12, )
-plt.savefig(results_dir+'star_ssfr_medians.png')
-plt.clf()
-for m in range(len(mass_bins)):
-	plt.errorbar(bins+(dr*0.5), np.log10(star_ssfr_mean[m]), yerr=np.log10(star_ssfr_sigma[m]), marker='.', markersize=4, linestyle='--', 
-				label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('log sSFR (yr^-1)')
-plt.xlim(0, 2)
-plt.ylim(-12, )
-plt.savefig(results_dir+'star_ssfr_means.png')
-plt.clf()
-
-
-for m in range(len(mass_bins)):
-	plt.plot(bins+(dr*0.5), gas_sfr_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-	plt.fill_between(bins+(dr*0.5), gas_sfr_lower[m], gas_sfr_higher[m], alpha=0.3)
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('SFR surface density (Msun/yr /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'gas_sfr_medians.png')
-plt.clf()
-for m in range(len(mass_bins)):
-	plt.errorbar(bins+(dr*0.5), gas_sfr_mean[m], yerr=gas_sfr_sigma[m], marker='.', markersize=4, linestyle='--', 
-				label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('SFR surface density (Msun/yr /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'gas_sfr_means.png')
-plt.clf()
-
-
-for m in range(len(mass_bins)):
-	plt.plot(bins+(dr*0.5), np.log10(gas_ssfr_median[m]), marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-	plt.fill_between(bins+(dr*0.5), np.log10(gas_ssfr_lower[m]), np.log10(gas_ssfr_higher[m]), alpha=0.3)
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('log sSFR (yr^-1)')
-plt.xlim(0, 2)
-plt.ylim(-12, )
-plt.savefig(results_dir+'gas_ssfr_medians.png')
-plt.clf()
-for m in range(len(mass_bins)):
-	plt.errorbar(bins+(dr*0.5), np.log10(gas_ssfr_mean[m]), yerr=np.log10(gas_ssfr_sigma[m]), marker='.', markersize=4, linestyle='--', 
-				label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('log sSFR (yr^-1)')
-plt.xlim(0, 2)
-plt.ylim(-12, )
-plt.savefig(results_dir+'gas_ssfr_means.png')
-plt.clf()
-
-
-for m in range(len(mass_bins)):
-	plt.plot(bins+(dr*0.5), gas_h1_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-	plt.fill_between(bins+(dr*0.5), gas_h1_lower[m], gas_h1_higher[m], alpha=0.3)
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('HI surface density (Msun /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'h1_medians.png')
-plt.clf()
-for m in range(len(mass_bins)):
-	plt.errorbar(bins+(dr*0.5), gas_h1_mean[m], yerr=gas_h1_sigma[m], marker='.', markersize=4, linestyle='--', 
-				label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('HI surface density (Msun /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'h1_means.png')
-plt.clf()
-
-
-for m in range(len(mass_bins)):
-	plt.plot(bins+(dr*0.5), gas_h2_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-	plt.fill_between(bins+(dr*0.5), gas_h2_lower[m], gas_h2_higher[m], alpha=0.3)
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('HII surface density (Msun /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'h2_medians.png')
-plt.clf()
-for m in range(len(mass_bins)):
-	plt.errorbar(bins+(dr*0.5), gas_h2_mean[m], yerr=gas_h2_sigma[m], marker='.', markersize=4, linestyle='--', 
-				label=bin_labels[m] +', '+str(no_gals[m])+' galaxies')
-plt.legend()
-plt.xlabel('R half *')
-plt.ylabel('HII surface density (Msun /R half bin^2)')
-plt.xlim(0, 2)
-plt.savefig(results_dir+'h2_means.png')
-plt.clf()
