@@ -30,7 +30,7 @@ def tage(cosmo,thubble,a):
 	"""
 	return thubble-cosmo.age(1./a-1).value
 
-def make_profile(NR, DR, r, quantity):
+def make_profile_old(NR, DR, r, quantity):
 	profile = np.zeros(NR)
 	# make profile of total mass of stars with ages 50Myr - 100Myr
 	for j in range(0, NR):
@@ -42,11 +42,25 @@ def make_profile(NR, DR, r, quantity):
 			profile[j] /= np.pi*(DR*DR*(j+1)*(j+1) - DR*DR*j*j)
 	return profile
 
-def plot_profile(r, profile, filename, ylabel, xlabel='R half *', title=''):
+def make_profile(n, dr, r, quantity, rhalf):
+
+	surface_density = np.zeros(n)
+	for j in range(0, n):
+		mask = (r >= j*dr)*(r < (j+1)*dr)
+		surface_density[j] = np.sum(quantity[mask])
+		if (j==0):
+			surface_density[j] /= np.pi*(dr*rhalf)**2
+		else:
+			surface_density[j] /= np.pi*((dr*(j+1)*rhalf)**2 - (dr*j*rhalf)**2)	
+	return surface_density
+
+def plot_profile(r, profile, filename, ylabel, xlabel='R half *', title='', ylim=None):
 	plt.plot(r, profile, linestyle='--', marker='.')
 	plt.ylabel(ylabel)
 	plt.xlabel(xlabel)
 	plt.title(title)
+	if ylim:
+		plt.xlim(ylim, )
 	plt.xlim(0, )
 	plt.savefig(filename)
 	plt.clf()
