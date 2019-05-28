@@ -14,14 +14,15 @@ from astropy.cosmology import FlatLambdaCDM
 
 from profile_methods import *
 
-N = 5
-age_min = 50.
+age_min = 0.
 age_max = 150.
 mass_loss = 1.18
-time = 100.e6
+time = (age_max - age_min) * 1.e6
 bh_center = True
 rotate_galaxies = False
-selection = 'green_valley'
+#selection = 'green_valley'
+selection = 'star_forming'
+vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
 n = 10 # number of bins
 factor = 2.
@@ -59,6 +60,7 @@ with h5py.File(sample_file, 'r') as f:
 		print 'Need to identify galaxies; run gv_sample.py first'
 
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
+halflight_file = '/home/sapple/simba_sizes/sizes/data/'+model+'_'+wind+'_'+snap+'_.data.h5'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
 sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5', LoadHalo=False)
@@ -74,7 +76,10 @@ gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
 gal_sfr[np.where(gal_sfr == 1.)[0]] = 0.
 gal_ssfr = gal_sfr / gal_sm
-gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
+
+with h5py.File(halflight_file, 'r') as f:
+    gal_rad = f['halflight'][:] # these are in pkpc
+#gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
 
 gal_sm = np.log10(gal_sm[gal_ids*gal_cent])
 gal_ssfr = np.log10(gal_ssfr[gal_ids*gal_cent])
@@ -83,14 +88,14 @@ gal_ids = np.arange(len(gal_ids))[gal_ids*gal_cent]
 
 # load in star particle data with readsnap
 star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
-star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / h
-star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0)
+star_mass = readsnap(snapfile, 'mass', 'star', suppress=1, units=1) / h # in Mo
+star_vels = readsnap(snapfile, 'vel', 'star', suppress=1, units=0) # in km/s
 star_tform = readsnap(snapfile, 'age', 'star', suppress=1, units=1) # expansion times at time of formation
 
 gas_pos = readsnap(snapfile, 'pos', 'gas', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
-gas_mass = readsnap(snapfile, 'mass', 'gas', suppress=1, units=1) / h
-gas_vels = readsnap(snapfile, 'vel', 'gas', suppress=1, units=0)
-gas_sfr = readsnap(snapfile, 'sfr', 'gas', suppress=1, units=1)
+gas_mass = readsnap(snapfile, 'mass', 'gas', suppress=1, units=1) / h # in Mo
+gas_vels = readsnap(snapfile, 'vel', 'gas', suppress=1, units=0) # in km/s
+gas_sfr = readsnap(snapfile, 'sfr', 'gas', suppress=1, units=1) # in Mo/yr
 gas_h1 = readsnap(snapfile, 'NeutralHydrogenAbundance', 'gas', suppress=1, units=1)
 gas_h2 = readsnap(snapfile, 'fh2', 'gas', suppress=1, units=1)
 
@@ -174,9 +179,8 @@ for m in range(len(mass_bins)):
 		if rotate_galaxies:
 			axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 			pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
-			r = np.linalg.norm(pos[:, [0, 1]], axis=1) / rhalf
-		else:
-			r = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
+	
+		r = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
 
 		plot_name = results_dir + 'images/gal_'+str(gal_ids_use[i]) + '_stars.png'
 		make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
@@ -211,11 +215,9 @@ for m in range(len(mass_bins)):
 		Rotate to face on plane
 		"""
 		if rotate_galaxies:
-			axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
 			pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
-			r = np.linalg.norm(pos[:, [0, 1]], axis=1) / rhalf
-		else:
-			r  = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
+		
+		r  = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
 
 		plot_name = results_dir + 'images/gal_'+str(gal_ids_use[i]) + '_gas.png'
 		make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
