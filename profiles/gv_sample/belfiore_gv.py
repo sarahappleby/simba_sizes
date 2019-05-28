@@ -49,7 +49,9 @@ elif selection == '2':
 elif selection == '3':
 	b1 = -7.45; b2 = -8.45
 
-h5_dir = '/home/sapple/simba_sizes/profiles/gv_sample/s50j7k/belfiore/selection_'+selection +'/'
+h5_dir = '/home/sapple/simba_sizes/profiles/gv_sample/belfiore/'+wind+'/selection_'+selection +'/'
+if not os.path.exists(h5_dir):
+	os.makedirs(h5_dir)
 
 plots_dir = h5_dir +model+'_'+snap+'/'
 if not os.path.exists(plots_dir):
@@ -85,19 +87,22 @@ elif selection == '3':
 	new_lower = sfms_line(sm_plot, a=0.73, b=b2)
 
 cmap = plt.get_cmap('jet_r')
-new_cmap = truncate_colormap(cmap, 0.00, 0.83)
+new_cmap = truncate_colormap(cmap, 0.15, 0.95)
 
-plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='Belfiore 2018')
-if selection == '1' or selection == '2':
-	plt.plot(sm_plot, belfiore_lower, ls='--', lw=1.5, c='m')
+plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+if selection == '1':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+elif selection == '2':
+	plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 1 dex')
 else:
-	plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='Belfiore 2018 + 0.25 dex')
-	plt.plot(sm_plot, new_lower, ls='--', lw=1.5, c='b')
+	plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+	plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
 plt.axvline(10., ls='--', lw=1.5, c='k')
 plt.axvline(10.5, ls='--', lw=1.5, c='k')
 plt.axvline(11., ls='--', lw=1.5, c='k')
-plt.scatter(gal_sm, gal_sfr, s=1, c=gal_ssfr, cmap='jet_r')
+plt.scatter(gal_sm, gal_sfr, s=1, c=gal_ssfr, cmap=new_cmap)
 plt.xlim(9., 11.5)
+plt.ylim(-3.5, )
 plt.clim(-12, -9)
 plt.colorbar(label='log sSFR')
 plt.legend()
@@ -106,36 +111,42 @@ plt.ylabel('log SFR')
 plt.savefig(plots_dir+'b18_sample_centrals_colormap.png')
 plt.clf()
 
-plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='Belfiore 2018')
-if selection == '1' or selection == '2':
-	plt.plot(sm_plot, belfiore_lower, ls='--', lw=1.5, c='m')
+plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+if selection == '1':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+elif selection == '2':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 1 dex')
 else:
-	plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='Belfiore 2018 + 0.25 dex')
-	plt.plot(sm_plot, new_lower, ls='--', lw=1.5, c='b')
+        plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+        plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
 plt.axvline(10., ls='--', lw=1.5, c='k')
 plt.axvline(10.5, ls='--', lw=1.5, c='k')
 plt.axvline(11., ls='--', lw=1.5, c='k')
 plt.scatter(gal_sm[gv_mask], gal_sfr[gv_mask], s=1, c='g', label='Green Valley')
 plt.scatter(gal_sm[sf_mask], gal_sfr[sf_mask], s=1, c='b', label='SFMS')
 plt.xlim(9., 11.5)
+plt.ylim(-3.5, )
 plt.legend()
 plt.xlabel('log M*')
 plt.ylabel('log SFR')
 plt.savefig(plots_dir+'b18_sample_all.png')
 plt.clf()
 
-plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='Belfiore 2018')
-if selection == '1' or selection == '2':
-	plt.plot(sm_plot, belfiore_lower, ls='--', lw=1.5, c='m')
+plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+if selection == '1':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+elif selection == '2':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 1 dex')
 else:
-	plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='Belfiore 2018 + 0.25 dex')
-	plt.plot(sm_plot, new_lower, ls='--', lw=1.5, c='b')
+        plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+        plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
 plt.axvline(10., ls='--', lw=1.5, c='k')
 plt.axvline(10.5, ls='--', lw=1.5, c='k')
 plt.axvline(11., ls='--', lw=1.5, c='k')
 plt.scatter(gal_sm[gv_mask*gal_cent], gal_sfr[gv_mask*gal_cent], s=1, c='g', label='Green Valley')
 plt.scatter(gal_sm[sf_mask*gal_cent], gal_sfr[sf_mask*gal_cent], s=1, c='b', label='SFMS')
 plt.xlim(9., 11.5)
+plt.ylim(-3.5, )
 plt.legend()
 plt.xlabel('log M*')
 plt.ylabel('log SFR')
@@ -145,18 +156,22 @@ plt.clf()
 for i in range(2):
 	sm_mask = (gal_sm > masses[i]) & (gal_sm < masses[i+1])
 
-	plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='Belfiore 2018')
-	if selection == '1' or selection == '2':
-		plt.plot(sm_plot, belfiore_lower, ls='--', lw=1.5, c='m')
-	else:
-		plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='Belfiore 2018 + 0.25 dex')
-		plt.plot(sm_plot, new_lower, ls='--', lw=1.5, c='b')
+	plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+	if selection == '1':
+                plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+        elif selection == '2':
+                plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 1 dex')
+        else:
+                plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+                plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
+
 	plt.axvline(10., ls='--', lw=1.5, c='k')
 	plt.axvline(10.5, ls='--', lw=1.5, c='k')
 	plt.axvline(11., ls='--', lw=1.5, c='k')
 	plt.scatter(gal_sm[sm_mask*gal_cent*gv_mask], gal_sfr[sm_mask*gal_cent*gv_mask], s=1, c='g', label='Green Valley')
 	plt.scatter(gal_sm[sm_mask*gal_cent*sf_mask], gal_sfr[sm_mask*gal_cent*sf_mask], s=1, c='b', label='SFMS')
 	plt.xlim(9., 11.5)
+        plt.ylim(-3.5, )
 	plt.legend()
 	plt.xlabel('log M*')
 	plt.ylabel('log SFR')

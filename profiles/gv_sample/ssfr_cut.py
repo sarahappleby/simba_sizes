@@ -6,19 +6,25 @@ import sys
 import os
 import matplotlib.colors as colors
 
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+        new_cmap = colors.LinearSegmentedColormap.from_list(
+                                'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+                                cmap(np.linspace(minval, maxval, n)))
+        return new_cmap
+
 def sfms_line(x0, a=1., b=-10.):
 	return x0*a + b
 
 masses = [10., 10.5, 11.]
-ssfr_min = -11.0
-ssfr_max = -10.
+ssfr_min = -11.5
+ssfr_max = -10.5
 sm_plot = np.arange(9.0, 12., 0.5)
 
 model = sys.argv[1]
 wind = sys.argv[2]
 snap = sys.argv[3]
 
-h5_dir = '/home/sapple/simba_sizes/profiles/gv_sample/ssfr_cuts/'+wind+'/'
+h5_dir = '/home/sapple/simba_sizes/profiles/gv_sample/ssfr_cuts-10.5/'+wind+'/'
 if not os.path.exists(h5_dir):
 	os.makedirs(h5_dir)
 
@@ -42,15 +48,18 @@ gal_sfr = np.log10(gal_sfr)
 gv_mask = (gal_ssfr	> ssfr_min) & (gal_ssfr < ssfr_max)
 sf_mask = gal_ssfr > ssfr_max
 
-upper = sfms_line(sm_plot, a=1., b=-10.)
-lower = sfms_line(sm_plot, a=1., b=-11.)
+upper = sfms_line(sm_plot, a=1., b=ssfr_max)
+lower = sfms_line(sm_plot, a=1., b=ssfr_min)
+
+cmap = plt.get_cmap('jet_r')
+new_cmap = truncate_colormap(cmap, 0.15, 0.95)
 
 plt.plot(sm_plot, upper, ls='--', lw=1.5, c='k')
 plt.plot(sm_plot, lower, ls='--', lw=1.5, c='k')
 plt.axvline(10., ls='--', lw=1.5, c='k')
 plt.axvline(10.5, ls='--', lw=1.5, c='k')
 plt.axvline(11., ls='--', lw=1.5, c='k')
-plt.scatter(gal_sm, gal_sfr, s=1, c=gal_ssfr, cmap='jet_r')
+plt.scatter(gal_sm, gal_sfr, s=1, c=gal_ssfr, cmap=new_cmap)
 plt.xlim(9., 11.5)
 plt.clim(-12, -9)
 plt.colorbar(label='log sSFR')
@@ -65,7 +74,7 @@ plt.plot(sm_plot, lower, ls='--', lw=1.5, c='k')
 plt.axvline(10., ls='--', lw=1.5, c='k')
 plt.axvline(10.5, ls='--', lw=1.5, c='k')
 plt.axvline(11., ls='--', lw=1.5, c='k')
-plt.scatter(gal_sm[gal_cent], gal_sfr[gal_cent], s=1, c=gal_ssfr[gal_cent], cmap='jet_r')
+plt.scatter(gal_sm[gal_cent], gal_sfr[gal_cent], s=1, c=gal_ssfr[gal_cent], cmap=new_cmap)
 plt.xlim(9., 11.5)
 plt.clim(-12, -9)
 plt.colorbar(label='log sSFR')
