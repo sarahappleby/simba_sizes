@@ -2,14 +2,23 @@ import h5py
 import numpy as np 
 import matplotlib.pyplot as plt
 import sys
+from statsmodels.robust.norms import TukeyBiweight
+
+def tukey_biweight(x, c=9.0):
+    median = np.nanpercentile(x, '50', axis=0)
+    mad = np.median(np.abs(x - median), axis=0)
+    u = (x - median)/(c*mad)
+    weights = (1 - u**2)**2
+    return np.sum(x*weights, axis=0) / np.sum(weights, axis=0)
+
 
 profile_dir = sys.argv[1]
 
 results_dir = profile_dir
 
-bin_labels = ['10.0 - 10.5', '10.5 - 11.0']
+#bin_labels = ['10.0 - 10.5', '10.5 - 11.0']
 
-#bin_labels = ['10.0 - 10.5', '10.5 - 11.0', '> 11.0']
+bin_labels = ['10.0 - 10.5', '10.5 - 11.0', '> 11.0']
 
 n = 10
 factor = 2.
@@ -74,13 +83,14 @@ for m in range(len(bin_labels)):
 	gas_sfr_mean[m] = np.mean(use_gas_sfr, axis=0)
 	gas_sfr_sigma[m] = np.std(use_gas_sfr, axis=0)
 
-	gas_ssfr_median[m] = np.nanpercentile(use_gas_ssfr, '50', axis=0)
+
+        
+        gas_ssfr_median[m] = np.nanpercentile(use_gas_ssfr, '50', axis=0)
 	gas_ssfr_lower[m] = np.nanpercentile(use_gas_ssfr, '25', axis=0)
 	gas_ssfr_higher[m] = np.nanpercentile(use_gas_ssfr, '75', axis=0)
 	gas_ssfr_mean[m] = np.mean(use_gas_ssfr, axis=0)
 	gas_ssfr_sigma[m] = np.std(use_gas_ssfr, axis=0)
 	gas_ssfr_sigma[m] /= (np.log(10.)*gas_ssfr_mean[m])
-
 
 	gas_ssfr_median[m][gas_ssfr_median[m] == 0.] = 1.e-20
 	gas_ssfr_lower[m][gas_ssfr_lower[m] == 0.] = 1.e-20
@@ -190,8 +200,8 @@ for m in range(len(bin_labels)):
 plt.legend()
 plt.xlabel('R half *')
 plt.ylabel('log sSFR (yr^-1)')
-plt.xlim(0, 2)
-plt.ylim(-13, )
+plt.xlim(0, 1.5)
+plt.ylim(-11.5, )
 plt.savefig(results_dir+'gas_ssfr_medians.png')
 plt.clf()
 for m in range(len(bin_labels)):
