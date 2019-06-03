@@ -48,7 +48,7 @@ def plot_data(ax, z):
                 # Alcorn+16 CANDELS+ZFOURGE
                 ms_data = np.linspace(9,11.5,5)
                 re_data = 0.2*(ms_data-10)+0.4
-                ax.plot(ms_data,re_data,'-',color='k',lw=3,label='CANDELS+ZFOURGE (Alcorn+16)')
+                ax.plot(ms_data,re_data,'-',color='k',lw=3,label='CANDELS+ZFOURGE (Allen+16)')
                 # vdWel+14 CANDELS
                 logms = [9.75,10.25,10.75,11.25]
                 logRe = [0.39,0.44,0.47,0.62]
@@ -58,25 +58,14 @@ def plot_data(ax, z):
                 ax.errorbar(logms,logRe,lw=3,yerr=[eRelo,eRehi],color='k')
 
 
-data_dir = '/home/sapple/simba_sizes/data/'
-plot_dir = '/home/sapple/simba_sizes/plots/'
+rhalf_file = '/home/sapple/simba_sizes/sizes/data/halfradius.h5'
+plot_dir = '/home/sapple/simba_sizes/sizes/plots/'
 
-"""
-mufasa_snaps = ['070', '085', '095', '105', '125', '135']
 simba_snaps = ['062', '078', '090', '105', '125', '151']
-
-mufasa_z = [3.0, 2.0, 1.5, 1.0, 0.5, 0.0]
 simba_z = [3.0, 2.0, 1.5, 1.0, 0.5, 0.0]
-"""
 
-mufasa_snaps = ['085', '095', '125', '135']
-simba_snaps = ['078', '090', '125', '151']
-
-mufasa_z = [2.0, 1.5, 0.5, 0.0]
-simba_z = [2.0, 1.5, 0.5, 0.0]
-
-model = 'm50n512'
-simba = 's50j7k'
+model = 'm100n1024'
+wind = 's50j7k'
 
 mmin = 8.7
 mmax = 12.5
@@ -88,57 +77,62 @@ mmax = 12.5
 
 fig = plt.figure(figsize=(15, 17))
 
-for i in range(4):
-	
-	with h5py.File(data_dir+model+'_fh_qr_'+mufasa_snaps[i]+'_data.h5', 'r') as mufasa_data:
-                mufasa_rad_l = mufasa_data['halflight'].value
-                mufasa_central = mufasa_data['central'].value
-                mufasa_smass = mufasa_data['stellar_mass'].value
-                mufasa_sfr = mufasa_data['sfr'].value
+for i in range(len(simba_z)):
+        
+        caesar_data = '/home/sapple/simba_sizes/sizes/data/'+model+'_'+wind+'_'+simba_snaps[i]+'_caesar_data.h5'
+        if not os.path.isfile(caesar_data):
+            infile = '/home/rad/data/'+model+'/'+wind+'/Groups/'+model+'_'+simba_snaps[i]+'.hdf5'
+            sim = caesar.load(infile, LoadHalo=False)
+            central = np.asarray([j.central for j in sim.galaxies])
+            ms = np.asarray([j.masses['stellar'].in_units('Msun') for j in sim.galaxies])
+            sfr = np.array([j.sfr.in_units('Msun/yr') for j in sim.galaxies])
+            sfr[np.where(sfr == 1.)[0]] = 0.
+            with h5py.File(caesar_data, 'w') as f:
+                f.create_dataset('central', data=np.array(central))
+                f.create_dataset('stellar_mass', data=np.array(ms))
+                f.create_dataset('sfr', data=np.array(sfr))
+        else:
+            with h5py.File(caesar_data, 'r') as f:
+                central = f['central'].value
+                ms = f['stellar_mass'].value
+                sfr = f['sfr'].value
 
+	with h5py.File(rhalf_file, 'r') as r:
+		rhalf = r[model+'_'+wind+'_'+simba_snaps[i]+'_halflight'].value
+		#rhalfmass = r[model+'_'+wind+'_'+simba_snaps[i]+'_halfmass'].value
+        rhalf = np.sum(rhalf, axis=0) / 3
 
-	with h5py.File(data_dir+model+'_'+simba+'_'+simba_snaps[i]+'_data.h5', 'r') as simba_data:
-		simba_rad_l = simba_data['halflight'].value
-		simba_central = simba_data['central'].value
-		simba_smass = simba_data['stellar_mass'].value
-		simba_sfr = simba_data['sfr'].value
-	
-	simba_ssfr = 1.e9*simba_sfr/simba_smass
-	simba_ssfr = np.log10(simba_ssfr+10**(-2.5+0.3*simba_z[i]))
-	ssfrlim = min(simba_ssfr)+0.2
+	ssfr = 1.e9*sfr/ms
+        #ssfr = np.log10(ssfr+10**(-2.9+0.3*simba_z[i]))
+	ssfr = np.log10(ssfr)
+	ssfrlim = -1.8+0.3*simba_z[i]
 
 	# plot simba galaxy points
-	massbin,cvecbin,ebinlo,ebinhi = pm.runningmedian(np.log10(simba_smass[simba_central]),simba_ssfr[simba_central])
-        simba_x = np.log10(simba_smass[simba_rad_l>0])  
-        simba_y = np.log10(simba_rad_l[simba_rad_l>0])
-        simba_c = simba_ssfr - np.interp(np.log10(simba_smass),massbin,cvecbin)
-        simba_c = simba_ssfr
+	massbin,cvecbin,ebinlo,ebinhi = pm.runningmedian(np.log10(ms[central]),ssfr[central])
+        simba_x = np.log10(ms[rhalf>0])  
+        simba_y = np.log10(rhalf[rhalf>0])
+        simba_c = ssfr - np.interp(np.log10(ms),massbin,cvecbin)
+        simba_c = ssfr
+        simba_c[simba_c < -2.5] = -2.5
 
 	cmap = plt.get_cmap('jet_r')
-	pixsize = 3*(simba_x/min(simba_x)+1)
+	pixsize = 1*(simba_x-min(simba_x))+0.5
 	
 	ax = fig.add_subplot(3, 2, i+1)
 
 	im = ax.scatter(simba_x, simba_y, c=simba_c, s=pixsize, lw=0, cmap=cmap, label='Simba')
-	cbar = fig.colorbar(im,ax=ax, label=r'sSFR')
+	cbar = fig.colorbar(im,ax=ax, label=r'log sSFR')
 	cbar.ax.tick_params(labelsize=10)
-	
+
 	# plot simba red and blue/ all galaxies
 	if simba_z[i] <= 1.5:
-        	bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(simba_smass[simba_ssfr>ssfrlim]),np.log10(simba_rad_l[simba_ssfr>ssfrlim]))
-                ax.plot(bin_cent,ymean,'--',lw=4,color='c', label='Star forming')
-                
-		bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(simba_smass[simba_ssfr<ssfrlim]),np.log10(simba_rad_l[simba_ssfr<ssfrlim]))
+        	bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr>ssfrlim]),np.log10(rhalf[ssfr>ssfrlim]))
+                ax.plot(bin_cent,ymean,'--',lw=4,color='c', label='Star forming')   
+		bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr<ssfrlim]),np.log10(rhalf[ssfr<ssfrlim]))
                 ax.plot(bin_cent,ymean,'--',lw=4,color='m', label='Passive')
 	else:
 		bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(simba_x,simba_y)
 		ax.plot(bin_cent,ymean,'--',lw=4,color='b', label='Simba')
-	
-	# plot mufasa median data		
-	mufasa_x = np.log10(mufasa_smass[mufasa_rad_l>0])
-	mufasa_y = np.log10(mufasa_rad_l[mufasa_rad_l>0])
-	bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(mufasa_x, mufasa_y)
-	ax.plot(bin_cent,ymean,'--',lw=2,color='g', label='Mufasa')
 	
 	# plot redshift observational data
 	plot_data(ax, simba_z[i])
@@ -151,6 +145,6 @@ for i in range(4):
 	ax.set_ylabel(r'$\log\ R_{half,*}$' ,fontsize=16)
 	ax.legend(loc='lower right', fontsize=8)
 	
-plt.savefig(plot_dir+'halflight_'+model+'.pdf', bbox_inches='tight', format='pdf')
+plt.savefig(plot_dir+'halflight_'+model+'.png', bbox_inches='tight', format='png')
 plt.clf()
 
