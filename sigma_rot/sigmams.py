@@ -1,11 +1,15 @@
 """
 From Romeel.
 """
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 import caesar
 import sys
 import pylab as plt
 import numpy as np
 from readgadget import *
+sys.path.append('/home/sapple/tools/')
 import plotmedian as pm
 
 if len(sys.argv) < 3:
@@ -22,7 +26,7 @@ mmax = 12.5
 
 def plot_data(redshift):
   if redshift < 0.5:	
-    infile = 'Observations/KormendyHo2013/KH13.dat'
+    infile = '/home/rad/gizmo-analysis/romeeld/caesar/Observations/KormendyHo2013/KH13.dat'
     hubtype,mbh,mbhlo,mbhhi,sig,esig = np.loadtxt(infile,usecols=(2,11,12,13,14,15),unpack=True)
     #print mbh,mbhlo,mbhhi,sig,esig
     embh = [np.log10(mbh)-np.log10(mbh-mbhlo),np.log10(mbhhi+mbh)-np.log10(mbh)]
@@ -51,7 +55,7 @@ for iwind in range(0,len(WIND)):
     rad_sat = np.asarray([i.radii['stellar_half_mass'] for i in sim.galaxies if i.central != 1])
   
     cents = np.asarray([i for i in sim.galaxies if i.central == 1])
-    sv = readsnap(snapfile,'vel','star',units=1,suppress=1) # physical km/s
+    sv = readsnap(snapfile,'vel','star',units=0,suppress=1) # physical km/s
     sigv3d = []
     for g in cents:
         svgal = np.array([sv[k] for k in g.slist])
