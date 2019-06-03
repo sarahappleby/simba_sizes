@@ -1,59 +1,82 @@
-import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
-
+import os
 import numpy as np
 import h5py
 
-data_dir = '/home/sapple/simba_sizes/data/'
-plot_dir = '/home/sapple/simba_sizes/plots/'
-mufasa_caesar = '/home/rad/data/m50n512/fh_qr/Groups/'
-simba_caesar = '/home/rad/data/m50n512/s50j7k/Groups/'
+radius_file = '/home/sapple/simba_sizes/sizes/data/halfradius.h5'
+plot_dir = '/home/sapple/simba_sizes/sizes/plots/'
+simba_caesar = '/home/sapple/simba_sizes/sizes/data/'
+
+model = 'm100n1024'
+wind = 's50j7k'
 
 m_star = 5.e10
 m_star_str = str(m_star)[0] + 'e' + str(int(np.log10(m_star)))
 
-mufasa_snaps = ['070', '085', '095', '105', '125', '126', '135']
 simba_snaps = ['062', '078', '090', '105', '125', '145', '151']
-
-mufasa_z = [3.0, 2.0, 1.5, 1.0, 0.5, 0.2, 0.0]
 simba_z = [3.0, 2.0, 1.5, 1.0, 0.5, 0.1, 0.0]
 
-mufasa_sizes = np.zeros(len(mufasa_z))
-mufasa_per_25 = np.zeros(len(mufasa_z))
-mufasa_per_75 = np.zeros(len(mufasa_z))
-simba_sizes = np.zeros(len(mufasa_z))
-simba_per_25 = np.zeros(len(mufasa_z))
-simba_per_75 = np.zeros(len(mufasa_z))
+vdw_blue = [8.9 * (1+i)**-0.75 for i in simba_z]
+vdw_red = [5.6* (1+i)**-1.48 for i in simba_z]
+
+blue_sizes = np.zeros(len(simba_z))
+blue_per_25 = np.zeros(len(simba_z))
+blue_per_75 = np.zeros(len(simba_z))
+
+red_sizes = np.zeros(len(simba_z))
+red_per_25 = np.zeros(len(simba_z))
+red_per_75 = np.zeros(len(simba_z))
 
 i = 0
-for snap in mufasa_snaps:
-	data = h5py.File('m50n512_fh_qr_'+snap+'_data.h5', 'r')
-	s_mass = data['stellar_mass'].value
-	r = data['halflight'].value
-	mask = (s_mass > 0.95*m_star) & (s_mass < 1.05*m_star)
-	mufasa_sizes[i] = np.median(r); mufasa_per_25[i] = np.percentile(r, 25); mufasa_per_75[i] = np.percentile(r, 75)
-	i += 1
+for i, snap in enumerate(simba_snaps):
+    with h5py.File(radius_file, 'r') as r:
+        rhalf = r[model+'_'+wind+'_'+snap+'_halflight'][:]
+    rhalf = np.sum(rhalf, axis=0) / 3.
+    caesar_data = simba_caesar + model+'_'+wind+'_'+snap+'_caesar_data.h5'
+    if not os.path.isfile(caesar_data):
+        import caesar
+        infile = '/home/rad/data/'+model+'/'+wind+'/Groups/'+model+'_'+snap+'.hdf5'
+        sim = caesar.load(infile, LoadHalo=False)
+        central = np.asarray([j.central for j in sim.galaxies])
+        smass = np.asarray([j.masses['stellar'].in_units('Msun') for j in sim.galaxies])
+        sfr = np.array([j.sfr.in_units('Msun/yr') for j in sim.galaxies])
+        sfr[np.where(sfr == 1.)[0]] = 0.
+        with h5py.File(caesar_data, 'w') as f:
+            f.create_dataset('central', data=np.array(central))
+            f.create_dataset('stellar_mass', data=np.array(smass))
+            f.create_dataset('sfr', data=np.array(sfr))
+    else:
+        with h5py.File(caesar_data, 'r') as f:
+            central = f['central'][:]
+            smass = f['stellar_mass'][:]
+            sfr = f['sfr'][:]
+    ssfr = np.log10(1.e9*sfr/smass)
+    ssfrlim = -1.8+0.3*simba_z[i]
 
-i = 0
-for snap in simba_snaps:
-        data = h5py.File('m50n512_s50j7k_'+snap+'_data.h5', 'r')
-	s_mass = data['stellar_mass'].value
-        mask = (s_mass > 0.95*m_star) & (s_mass < 1.05*m_star)
-        r = data['halflight'].value
-        simba_sizes[i] = np.median(r); simba_per_25[i] = np.percentile(r, 25); simba_per_75[i] = np.percentile(r, 75)
-        i += 1	
+    mask = (smass > 0.95*m_star) & (smass < 1.05*m_star)
+    star_forming = ssfr > ssfrlim
 
-plt.plot(mufasa_z, mufasa_sizes, linestyle='-', c='g', label='Mufasa')
-plt.fill_between(mufasa_z, mufasa_per_25, mufasa_per_75, facecolor='g', alpha=0.15, linewidth=1)
+    blue_sizes[i] = np.median(rhalf[central*mask*star_forming])
+    blue_per_25[i] = np.percentile(rhalf[central*mask*star_forming], 25)
+    blue_per_75[i] = np.percentile(rhalf[central*mask*star_forming], 75)
 
-plt.plot(simba_z, simba_sizes, linestyle='-', c='b', label='Simba')
-plt.fill_between(simba_z, simba_per_25, simba_per_75, facecolor='b', alpha=0.15, linewidth=1)
+    red_sizes[i] = np.median(rhalf[central*mask*np.invert(star_forming)])
+    red_per_25[i] = np.percentile(rhalf[central*mask*np.invert(star_forming)], 25)
+    red_per_75[i] = np.percentile(rhalf[central*mask*np.invert(star_forming)], 75)
+
+plt.plot(simba_z, vdw_blue, 'o', lw=5, color='b', label='CANDELS-LTG (van der Wel+14))')
+plt.plot(simba_z, vdw_red, 'o', lw=5, color='r', label='CANDELS-ETG (van der Wel+14))')
+
+plt.plot(simba_z, blue_sizes, linestyle='-', c='c', label='Star forming')
+plt.fill_between(simba_z, blue_per_25, blue_per_75, facecolor='c', alpha=0.15, linewidth=1)
+
+plt.plot(simba_z, red_sizes, linestyle='-', c='m', label='Passive')
+plt.fill_between(simba_z, red_per_25, red_per_75, facecolor='m', alpha=0.15, linewidth=1)
 
 plt.xlabel(r'z', fontsize=16)
-plt.xlim(3.1, -0.1)
+#plt.xlim(3.1, -0.1)
 plt.ylabel(r'$\log\ R_{half,*}$' ,fontsize=16)
-plt.legend(loc=2)
+plt.legend(loc=1)
 
 plt.savefig(plot_dir+'redshift_size_'+m_star_str+'.png')
 plt.clf()
