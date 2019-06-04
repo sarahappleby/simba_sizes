@@ -1,6 +1,7 @@
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 import os
 import h5py
@@ -11,7 +12,13 @@ import sys
 sys.path.append('/home/sapple/tools')
 import plotmedian as pm
 
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
 
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    new_cmap = colors.LinearSegmentedColormap.from_list('trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+                                                        cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
 
 def plot_data(ax, z):
         if z < 0.5: # Zhang+17 SDSS
@@ -75,6 +82,9 @@ mmax = 12.5
 #fig, axs = plt.subplots(3, 2)
 #axes = axs.reshape(-1)
 
+cmap = plt.get_cmap('jet_r')
+cmap = truncate_colormap(cmap, 0.05, 1.0)
+
 fig = plt.figure(figsize=(15, 17))
 
 for i in range(len(simba_z)):
@@ -115,13 +125,12 @@ for i in range(len(simba_z)):
         simba_c = ssfr
         simba_c[simba_c < -2.5] = -2.5
 
-	cmap = plt.get_cmap('jet_r')
 	pixsize = 1*(simba_x-min(simba_x))+0.5
 	
 	ax = fig.add_subplot(3, 2, i+1)
 
 	im = ax.scatter(simba_x, simba_y, c=simba_c, s=pixsize, lw=0, cmap=cmap, label='Simba')
-	cbar = fig.colorbar(im,ax=ax, label=r'log sSFR')
+	cbar = fig.colorbar(im,ax=ax, label=r'$\textrm{log} (\textrm{sSFR} / \textrm{Gyr}^{-1})$')
 	cbar.ax.tick_params(labelsize=10)
 
 	# plot simba red and blue/ all galaxies
@@ -141,8 +150,8 @@ for i in range(len(simba_z)):
 	ax.minorticks_on()
 	ax.set_xlim(mmin,mmax)
 	ax.set_ylim(-0.3,1.8-0.3*simba_z[i])
-	ax.set_xlabel(r'$\log\ M_{*}$',fontsize=16)
-	ax.set_ylabel(r'$\log\ R_{half,*}$' ,fontsize=16)
+	ax.set_xlabel(r'$\log\ (M_{*} / M_{\odot})$',fontsize=16)
+	ax.set_ylabel(r'$\log\ (R_{half} / \textrm{kpc})$' ,fontsize=16)
 	ax.legend(loc='lower right', fontsize=8)
 	
 plt.savefig(plot_dir+'halflight_'+model+'.png', bbox_inches='tight', format='png')

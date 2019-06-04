@@ -6,8 +6,8 @@ import sys
 import os
 import matplotlib.colors as colors
 
-#from matplotlib import rc
-#rc('text', usetex=True)
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
 
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
 	new_cmap = colors.LinearSegmentedColormap.from_list(                                                                                                                             
@@ -104,10 +104,10 @@ plt.scatter(gal_sm, gal_sfr, s=1, c=gal_ssfr, cmap=new_cmap)
 plt.xlim(9., 11.5)
 plt.ylim(-3.5, )
 plt.clim(-12, -9)
-plt.colorbar(label='log sSFR')
+plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
 plt.legend()
-plt.xlabel('log M*')
-plt.ylabel('log SFR')
+plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
+plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
 plt.savefig(plots_dir+'b18_sample_centrals_colormap.png')
 plt.clf()
 

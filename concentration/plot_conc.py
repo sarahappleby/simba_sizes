@@ -8,6 +8,9 @@ import sys
 sys.path.append('/home/sapple/tools')
 import plotmedian as pm
 
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
     new_cmap = colors.LinearSegmentedColormap.from_list('trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
                                                         cmap(np.linspace(minval, maxval, n)))
@@ -67,7 +70,7 @@ for i, snap in enumerate(snaps):
 
     ax = fig.add_subplot(3, 2, i+1)
     im = ax.scatter(np.log10(ms), conc, c=simba_c, s=pixsize, lw=0, cmap=cmap, label='Simba')
-    cbar = fig.colorbar(im,ax=ax, label=r'log sSFR')
+    cbar = fig.colorbar(im,ax=ax, label=r'$\textrm{log} (\textrm{sSFR} / \textrm{Gyr}^{-1})$')
     cbar.ax.tick_params(labelsize=10)
 
     if simba_z[i] <= 1.5:
@@ -83,7 +86,7 @@ for i, snap in enumerate(snaps):
     ax.annotate('z=%g'%(np.round(simba_z[i],1)), xy=(0.1, 0.9), xycoords='axes fraction',size=16,bbox=dict(boxstyle="round", fc="w"))
     ax.minorticks_on()
     ax.set_xlim(mmin,mmax)
-    ax.set_xlabel(r'$\log\ M_{*}$',fontsize=16)
+    ax.set_xlabel(r'$\log\ (M_{*} / M_{\odot})$',fontsize=16)
     ax.set_ylabel(r'$C$')
     ax.legend(loc='lower right', fontsize=8)
 
