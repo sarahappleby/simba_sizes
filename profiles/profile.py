@@ -19,7 +19,7 @@ age_max = 150.
 mass_loss = 1.18
 time = (age_max - age_min) * 1.e6
 bh_center = True
-rotate_galaxies = False
+rotate_galaxies = True
 #selection = 'green_valley'
 selection = 'star_forming'
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
@@ -60,7 +60,7 @@ with h5py.File(sample_file, 'r') as f:
 		print 'Need to identify galaxies; run gv_sample.py first'
 
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
-halflight_file = '/home/sapple/simba_sizes/sizes/data/'+model+'_'+wind+'_'+snap+'_.data.h5'
+halflight_file = '/home/sapple/simba_sizes/sizes/data/halfradius.h5'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
 sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5', LoadHalo=False)
@@ -78,7 +78,8 @@ gal_sfr[np.where(gal_sfr == 1.)[0]] = 0.
 gal_ssfr = gal_sfr / gal_sm
 
 with h5py.File(halflight_file, 'r') as f:
-    gal_rad = f['halflight'][:] # these are in pkpc
+    gal_rad = f[model+'_'+wind+'_'+snap+'_halflight'][:] # these are in pkpc
+gal_rad = np.sum(gal_rad, axis=0) / 3.
 #gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
 
 gal_sm = np.log10(gal_sm[gal_ids*gal_cent])
@@ -223,8 +224,8 @@ for m in range(len(mass_bins)):
 		make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
 		
 		use_gas_sfr[i] = make_profile(n, dr, r, sfr, rhalf)
-		use_gas_h1[i] = make_profile(n, dr, r, h1, rhalf)
-		use_gas_h2[i] = make_profile(n, dr, r, h2, rhalf)
+		use_gas_h1[i] = make_profile(n, dr, r, h1*mass, rhalf)
+		use_gas_h2[i] = make_profile(n, dr, r, h2*mass, rhalf)
 
 		use_gas_h1[i] /= np.sum(use_gas_h1[i])
 		use_gas_h2[i] /= np.sum(use_gas_h2[i])
