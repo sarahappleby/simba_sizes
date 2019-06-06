@@ -14,7 +14,13 @@ def tukey_biweight(x, c=5.0, epsilon=1.e-11):
     weights = np.zeros(u.shape)
     mask = np.abs(u) < 1.
     weights[mask] = (1. - u[mask]**2)**2
-    return np.sum(x*weights, axis=0) / np.sum(weights, axis=0)
+    tukey = np.sum(x*weights, axis=0) / np.sum(weights, axis=0)
+    n = x.shape[0]
+    num = np.sqrt(np.sum(((x - tukey)**2. * (1. - u**2.)**4.)*mask, axis=0))
+    den = np.abs(np.sum(((1. - u )*(1 - 5.*(u**2.)))*mask, axis=0))
+    scale = np.sqrt(n)*num / den
+    t = 1.96 # 97.5% of t distribution with df = max(0.7(n-1), 1)
+    return tukey, scale
 
 
 profile_dir = sys.argv[1]
@@ -35,7 +41,7 @@ star_sfr_median = np.zeros((3, n)); star_sfr_lower = np.zeros((3, n)); star_sfr_
 star_ssfr_median = np.zeros((3, n)); star_ssfr_lower = np.zeros((3, n)); star_ssfr_higher = np.zeros((3, n)); star_ssfr_mean = np.zeros((3, n)); star_ssfr_sigma = np.zeros((3, n))
 
 gas_sfr_median = np.zeros((3, n)); gas_sfr_lower = np.zeros((3, n)); gas_sfr_higher = np.zeros((3, n)); gas_sfr_mean = np.zeros((3, n)); gas_sfr_sigma = np.zeros((3, n))
-gas_ssfr_tukey = np.zeros((3, n));gas_ssfr_tukey_sig = np.zeros((3, n))
+gas_ssfr_tukey = np.zeros((3, n)); gas_ssfr_large_scale = np.zeros((3, n)); gas_ssfr_small_scale = np.zeros((3, n))
 gas_ssfr_median = np.zeros((3, n)); gas_ssfr_lower = np.zeros((3, n)); gas_ssfr_higher = np.zeros((3, n)); gas_ssfr_mean = np.zeros((3, n)); gas_ssfr_sigma = np.zeros((3, n))
 gas_h1_median = np.zeros((3, n)); gas_h1_lower = np.zeros((3, n)); gas_h1_higher = np.zeros((3, n)); gas_h1_mean = np.zeros((3, n)); gas_h1_sigma = np.zeros((3, n))
 gas_h2_median = np.zeros((3, n)); gas_h2_lower = np.zeros((3, n)); gas_h2_higher = np.zeros((3, n)); gas_h2_mean = np.zeros((3, n)); gas_h2_sigma = np.zeros((3, n))
@@ -90,8 +96,11 @@ for m in range(len(bin_labels)):
 	gas_sfr_mean[m] = np.mean(gas_sfr, axis=0)
 	gas_sfr_sigma[m] = np.std(gas_sfr, axis=0)
        
-        gas_ssfr_tukey[m] = tukey_biweight(gas_ssfr)
-
+        tukey, scale = tukey_biweight(gas_ssfr)
+        gas_ssfr_tukey[m] = np.log10(tukey)
+        gas_ssfr_large_scale[m] = scale / (np.log(10.)*tukey)
+        gas_ssfr_small_scale[m] = scale / (np.sqrt(no_gals[m])* np.log(10.)*tukey)
+        
 
         use_gas_ssfr = gas_ssfr.copy()
         use_gas_ssfr[use_gas_ssfr == 0.] = 1.e-14
@@ -200,7 +209,19 @@ plt.ylim(0, )
 plt.savefig(results_dir+'gas_sfr_means.png')
 plt.clf()
 
+b18
 
+for m in range(len(bin_labels)):
+    plt.plot(bins+(dr*0.5), gas_ssfr_tukey[m], marker='.', markersize=4, linestyle='-', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
+    #plt.fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], alpha=0.1)
+    plt.fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], alpha=0.3)
+plt.legend()
+plt.xlabel(r'$R_{half}$')
+plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
+plt.xlim(0, 1.5)
+plt.ylim(-12.5, )
+plt.savefig(results_dir+'gas_ssfr_tukey.png')
+plt.clf()
 for m in range(len(bin_labels)):
 	plt.plot(bins+(dr*0.5), gas_ssfr_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
 	plt.fill_between(bins+(dr*0.5), gas_ssfr_lower[m], gas_ssfr_higher[m], alpha=0.3)
@@ -208,7 +229,7 @@ plt.legend()
 plt.xlabel(r'$R_{half}$')
 plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
 plt.xlim(0, 1.5)
-plt.ylim(-11.5, )
+plt.ylim(-12.5, )
 plt.savefig(results_dir+'gas_ssfr_medians.png')
 plt.clf()
 for m in range(len(bin_labels)):
@@ -218,7 +239,7 @@ plt.legend()
 plt.xlabel('$R_{half}$')
 plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
 plt.xlim(0, 1.5)
-plt.ylim(-13, )
+plt.ylim(-12.5, )
 plt.savefig(results_dir+'gas_ssfr_means.png')
 plt.clf()
 
