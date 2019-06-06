@@ -35,11 +35,8 @@ star_sfr_median = np.zeros((3, n)); star_sfr_lower = np.zeros((3, n)); star_sfr_
 star_ssfr_median = np.zeros((3, n)); star_ssfr_lower = np.zeros((3, n)); star_ssfr_higher = np.zeros((3, n)); star_ssfr_mean = np.zeros((3, n)); star_ssfr_sigma = np.zeros((3, n))
 
 gas_sfr_median = np.zeros((3, n)); gas_sfr_lower = np.zeros((3, n)); gas_sfr_higher = np.zeros((3, n)); gas_sfr_mean = np.zeros((3, n)); gas_sfr_sigma = np.zeros((3, n))
-
 gas_ssfr_tukey = np.zeros((3, n));gas_ssfr_tukey_sig = np.zeros((3, n))
 gas_ssfr_median = np.zeros((3, n)); gas_ssfr_lower = np.zeros((3, n)); gas_ssfr_higher = np.zeros((3, n)); gas_ssfr_mean = np.zeros((3, n)); gas_ssfr_sigma = np.zeros((3, n))
-gas_setmin_ssfr_median = np.zeros((3, n)); gas_setmin_ssfr_lower = np.zeros((3, n)); gas_setmin_ssfr_higher = np.zeros((3, n)); gas_setmin_ssfr_mean = np.zeros((3, n)); gas_setmin_ssfr_sigma = np.zeros((3, n))
-both_setmin_ssfr_median = np.zeros((3, n)); both_setmin_ssfr_lower = np.zeros((3, n)); both_setmin_ssfr_higher = np.zeros((3, n)); both_setmin_ssfr_mean = np.zeros((3, n)); both_setmin_ssfr_sigma = np.zeros((3, n))
 gas_h1_median = np.zeros((3, n)); gas_h1_lower = np.zeros((3, n)); gas_h1_higher = np.zeros((3, n)); gas_h1_mean = np.zeros((3, n)); gas_h1_sigma = np.zeros((3, n))
 gas_h2_median = np.zeros((3, n)); gas_h2_lower = np.zeros((3, n)); gas_h2_higher = np.zeros((3, n)); gas_h2_mean = np.zeros((3, n)); gas_h2_sigma = np.zeros((3, n))
 
@@ -95,6 +92,7 @@ for m in range(len(bin_labels)):
        
         gas_ssfr_tukey[m] = tukey_biweight(gas_ssfr)
 
+
         use_gas_ssfr = gas_ssfr.copy()
         use_gas_ssfr[use_gas_ssfr == 0.] = 1.e-14
         use_gas_ssfr = np.log10(use_gas_ssfr)
@@ -104,35 +102,6 @@ for m in range(len(bin_labels)):
 	gas_ssfr_mean[m] = np.mean(use_gas_ssfr, axis=0)
 	gas_ssfr_sigma[m] = np.std(use_gas_ssfr, axis=0)
 	
-        # first try setting zeros in gas sfr to minimum of sfr
-
-        copy_gas_ssfr = gas_ssfr.copy()
-        ssfrmin = np.log10(np.percentile(copy_gas_ssfr[np.nonzero(copy_gas_ssfr)], '1')) - 0.2
-        copy_gas_ssfr = np.log10(copy_gas_ssfr)
-        N = len(copy_gas_ssfr[np.isinf(copy_gas_ssfr)])
-        copy_gas_ssfr[np.isinf(copy_gas_ssfr)] = np.random.normal(ssfrmin, 0.1, N)
-        
-        gas_setmin_ssfr_median[m] = np.nanpercentile(copy_gas_ssfr, '50', axis=0)
-        gas_setmin_ssfr_lower[m] = np.nanpercentile(copy_gas_ssfr, '25', axis=0)
-        gas_setmin_ssfr_higher[m] = np.nanpercentile(copy_gas_ssfr, '75', axis=0)
-        gas_setmin_ssfr_mean[m] = np.mean(copy_gas_ssfr, axis=0)
-        gas_setmin_ssfr_sigma[m] = np.std(copy_gas_ssfr, axis=0)
-
-        # next try adding star and gas sfr; integrated and instantaneous sfr
-        # need to set zeros to minimum of sfr
-        
-        both_ssfr = gas_ssfr + star_ssfr
-        ssfrmin = np.log10(np.percentile(both_ssfr[np.nonzero(both_ssfr)], '1')) - 0.2
-        both_ssfr = np.log10(both_ssfr)
-        N = len(both_ssfr[np.isinf(both_ssfr)])
-        both_ssfr[np.isinf(both_ssfr)] = np.random.normal(ssfrmin, 0.1, N)
-
-        both_setmin_ssfr_median[m] = np.nanpercentile(copy_gas_ssfr, '50', axis=0)
-        both_setmin_ssfr_lower[m] = np.nanpercentile(copy_gas_ssfr, '25', axis=0)
-        both_setmin_ssfr_higher[m] = np.nanpercentile(copy_gas_ssfr, '75', axis=0)
-        both_setmin_ssfr_mean[m] = np.mean(copy_gas_ssfr, axis=0)
-        both_setmin_ssfr_sigma[m] = np.std(copy_gas_ssfr, axis=0)
-
         # hi and h2:
 
 	gas_h1_median[m] = np.nanpercentile(gas_h1, '50', axis=0)
@@ -251,49 +220,6 @@ plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
 plt.xlim(0, 1.5)
 plt.ylim(-13, )
 plt.savefig(results_dir+'gas_ssfr_means.png')
-plt.clf()
-
-
-for m in range(len(bin_labels)):
-        plt.plot(bins+(dr*0.5), gas_setmin_ssfr_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
-        plt.fill_between(bins+(dr*0.5), gas_setmin_ssfr_lower[m], gas_setmin_ssfr_higher[m], alpha=0.3)
-plt.legend()
-plt.xlabel(r'$R_{half}$')
-plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
-plt.xlim(0, 1.5)
-#plt.ylim(-11.5, )
-plt.savefig(results_dir+'gas_setmin_ssfr_medians.png')
-plt.clf()
-for m in range(len(bin_labels)):
-        plt.errorbar(bins+(dr*0.5), gas_setmin_ssfr_mean[m], yerr=gas_setmin_ssfr_sigma[m], marker='.', markersize=4, linestyle='--',
-                                label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
-plt.legend()
-plt.xlabel('$R_{half}$')
-plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
-plt.xlim(0, 1.5)
-#plt.ylim(-13, )
-plt.savefig(results_dir+'gas_setmin_ssfr_means.png')
-plt.clf()
-
-for m in range(len(bin_labels)):
-        plt.plot(bins+(dr*0.5), both_setmin_ssfr_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
-        plt.fill_between(bins+(dr*0.5), both_setmin_ssfr_lower[m], both_setmin_ssfr_higher[m], alpha=0.3)
-plt.legend()
-plt.xlabel(r'$R_{half}$')
-plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
-plt.xlim(0, 1.5)
-#plt.ylim(-11.5, )
-plt.savefig(results_dir+'both_setmin_ssfr_medians.png')
-plt.clf()
-for m in range(len(bin_labels)):
-        plt.errorbar(bins+(dr*0.5), both_setmin_ssfr_mean[m], yerr=both_setmin_ssfr_sigma[m], marker='.', markersize=4, linestyle='--',
-                                label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
-plt.legend()
-plt.xlabel('$R_{half}$')
-plt.ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
-plt.xlim(0, 1.5)
-#plt.ylim(-13, )
-plt.savefig(results_dir+'both_setmin_ssfr_means.png')
 plt.clf()
 
 for m in range(len(bin_labels)):
