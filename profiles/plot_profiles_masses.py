@@ -9,15 +9,15 @@ plt.rcParams.update({'font.size': 12})
 
 def tukey_biweight(x, c=5.0, epsilon=1.e-11):
     median = np.nanpercentile(x, '50', axis=0)
-    mad = np.median(np.abs(x - median), axis=0)
+    mad = np.nanmedian(np.abs(x - median), axis=0)
     u = (x - median)/(c*mad + epsilon)
     weights = np.zeros(u.shape)
     mask = np.abs(u) < 1.
     weights[mask] = (1. - u[mask]**2)**2
-    tukey = np.sum(x*weights, axis=0) / np.sum(weights, axis=0)
+    tukey = np.nansum(x*weights, axis=0) / np.sum(weights, axis=0)
     n = x.shape[0]
-    num = np.sqrt(np.sum(((x - tukey)**2. * (1. - u**2.)**4.)*mask, axis=0))
-    den = np.abs(np.sum(((1. - u )*(1 - 5.*(u**2.)))*mask, axis=0))
+    num = np.sqrt(np.nansum(((x - tukey)**2. * (1. - u**2.)**4.)*mask, axis=0))
+    den = np.abs(np.nansum(((1. - u )*(1 - 5.*(u**2.)))*mask, axis=0))
     scale = np.sqrt(n)*num / den
     t = 1.96 # 97.5% of t distribution with df = max(0.7(n-1), 1)
     return tukey, scale
@@ -208,8 +208,6 @@ plt.xlim(0, 2)
 plt.ylim(0, )
 plt.savefig(results_dir+'gas_sfr_means.png')
 plt.clf()
-
-b18
 
 for m in range(len(bin_labels)):
     plt.plot(bins+(dr*0.5), gas_ssfr_tukey[m], marker='.', markersize=4, linestyle='-', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
