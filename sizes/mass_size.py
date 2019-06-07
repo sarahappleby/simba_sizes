@@ -13,7 +13,7 @@ sys.path.append('/home/sapple/tools')
 import plotmedian as pm
 
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+plt.rc('font', family='serif', size=16)
 
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
     new_cmap = colors.LinearSegmentedColormap.from_list('trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
@@ -28,7 +28,7 @@ def plot_data(ax, z):
                 gamma = 10.72
                 M0 = 4.9e11/0.68**2
                 logRe_sf = np.log10(gamma * (10**ms_data/M0)**alpha * (1+10**ms_data/M0)**(beta-alpha))
-                ax.plot(ms_data,logRe_sf,':',color='b',lw=6,label='SDSS-SF (Zhang+19)', markersize=3)
+                ax.plot(ms_data,logRe_sf,':',color='mediumblue',lw=6,label='SDSS-SF (Zhang+19)', markersize=3)
                 alpha = -0.02
                 beta = 0.65
                 gamma = 1.58
@@ -44,29 +44,29 @@ def plot_data(ax, z):
                 logRe = [0.4, 0.52, 0.61, 0.71, 0.86]
                 eRelo = [0.25, 0.25, 0.25, 0.22, 0.17]
                 eRehi = [0.23, 0.21, 0.09, 0.16, 0.18]
-                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='bo',ecolor='b',label='CANDELS LTG', markersize=6)
+                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='o',color='mediumblue', ecolor='mediumblue',label='CANDELS LTG', markersize=6)
                 logms = [9.25,9.75,10.25,10.75,11.25]
                 logRe = [0.23, 0.195, 0.165, 0.375, 0.695]
                 eRelo = [0.25, 0.33, 0.25, 0.21, 0.18]
                 eRehi = [0.2, 0.24, 0.23, 0.22, 0.20]
-                ax.errorbar(np.array(logms)+0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='ro',ecolor='r',label='CANDELS ETG', markersize=6)
+                ax.errorbar(np.array(logms)+0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='o',color='r', ecolor='r',label='CANDELS ETG', markersize=6)
         if z >= 1.5 and z < 2.5:
                 # Allen+17 CANDELS+ZFOURGE, table 1
                 ms_data = np.linspace(9,11.5,5)
                 re_data = 0.2*(ms_data-10)+0.4
-                ax.plot(ms_data,re_data,'-',color='k',lw=3,label='CANDELS+ZFOURGE (Allen+17)')
+                ax.plot(ms_data,re_data,'-',color='k',lw=2.5,label='CANDELS+ZFOURGE (Allen+17)')
                 # vdWel+14 CANDELS, table 2
                 # average of z = 1.75, 2.25, table 2
                 logms = [9.75, 10.25, 10.75, 11.25]
                 logRe = [0.39, 0.48, 0.57, 0.67]
                 eRelo = [0.26, 0.26, 0.27, 0.21]
                 eRehi = [0.22, 0.2, 0.18, 0.19]
-                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='bo',ecolor='b',label='CANDELS LTG', markersize=6)
+                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='o',color='mediumblue', ecolor='mediumblue',label='CANDELS LTG (van der Wel+14)', markersize=6)
                 logms = [9.75, 10.25, 10.75, 11.25]
                 logRe = [0.22, -0.01, 0.14, 0.41]
                 eRelo = [0.24, 0.31, 0.26, 0.19]
                 eRehi = [0.26, 0.36, 0.38, 0.24]
-                ax.errorbar(np.array(logms)+0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='ro',ecolor='r',label='CANDELS ETG', markersize=6) 
+                ax.errorbar(np.array(logms)+0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='o',color='r',ecolor='r',label='CANDELS ETG (van der Wel+14)', markersize=6) 
                 """ ltg + etg, table 5
                 logms = [9.75,10.25,10.75,11.25]
                 logRe = [0.39,0.44,0.47,0.62]
@@ -88,15 +88,10 @@ wind = 's50j7k'
 mmin = 9.5
 mmax = 12.5
 
-# one subplot per redshift
-
-#fig, axs = plt.subplots(3, 2)
-#axes = axs.reshape(-1)
-
 cmap = plt.get_cmap('jet_r')
-cmap = truncate_colormap(cmap, 0.05, 1.0)
+cmap = truncate_colormap(cmap, 0.03, 1.0)
 
-fig = plt.figure(figsize=(24, 6))
+fig, ax = plt.subplots(1, 3, sharey=True, figsize=(25, 6))
 
 for i in range(len(simba_z)):
         
@@ -139,36 +134,36 @@ for i in range(len(simba_z)):
 
 	pixsize = 1*(simba_x-min(simba_x))+0.5
 	
-	ax = fig.add_subplot(1, 3, i+1)
-
-	im = ax.scatter(simba_x, simba_y, c=simba_c, s=pixsize, lw=0, cmap=cmap, label='Simba')
-	cbar = fig.colorbar(im,ax=ax, label=r'$\textrm{log} (\textrm{sSFR} / \textrm{Gyr}^{-1})$')
-	cbar.ax.tick_params(labelsize=10)
-
+	im = ax[i].scatter(simba_x, simba_y, c=simba_c, s=pixsize, lw=0, cmap=cmap, label='Simba')
+        
 	# plot simba red and blue/ all galaxies
-	if simba_z[i] <= 1.5:
+	if simba_z[i] <= 2.5:
         	bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr>ssfrlim]),np.log10(rhalf[ssfr>ssfrlim]))
-                ax.plot(bin_cent,ymean,'--',lw=4,color='c', label='Star forming')   
+                ax[i].plot(bin_cent,ymean,'--',lw=4,color='dodgerblue', label='Star forming')   
 		bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr<ssfrlim]),np.log10(rhalf[ssfr<ssfrlim]))
-                ax.plot(bin_cent,ymean,'--',lw=4,color='m', label='Passive')
+                ax[i].plot(bin_cent,ymean,'--',lw=4,color='m', label='Passive')
 	else:
 		bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(simba_x,simba_y)
-		ax.plot(bin_cent,ymean,'--',lw=4,color='b', label='Simba')
+		ax[i].plot(bin_cent,ymean,'--',lw=4,color='b', label='Simba')
 	
 	# plot redshift observational data
-	plot_data(ax, simba_z[i])
+	plot_data(ax[i], simba_z[i])
 
         res_line = np.log10(2.8*0.5 / ((1+simba_z[i])*0.68))
-	ax.annotate('z=%g'%(np.round(simba_z[i],1)), xy=(0.1, 0.9), xycoords='axes fraction',size=16,bbox=dict(boxstyle="round", fc="w"))
-	ax.minorticks_on()
-	ax.set_xlim(mmin,mmax)
-        ax.axhline(res_line, linestyle='--', color='k', lw=1.5, )
+	ax[i].annotate('z=%g'%(np.round(simba_z[i],1)), xy=(0.1, 0.9), xycoords='axes fraction',size=16,bbox=dict(boxstyle="round", fc="w"))
+	ax[i].minorticks_on()
+	ax[i].set_xlim(mmin,mmax)
+        ax[i].axhline(res_line, linestyle='--', color='k', lw=1.5, )
 	#ax.set_ylim(-0.3,1.8-0.3*simba_z[i])
-        ax.set_ylim(-0.25, 1.3)
-	ax.set_xlabel(r'$\log\ (M_{*} / M_{\odot})$',fontsize=16)
-	ax.set_ylabel(r'$\log\ (R_{half} / \textrm{kpc})$' ,fontsize=16)
-	ax.legend(loc='lower right', fontsize=9)
-	
+        ax[i].set_ylim(-0.3, 1.3)
+	ax[i].set_xlabel(r'$\log\ (M_{*} / M_{\odot})$',fontsize=16)
+        ax[i].legend(fontsize=10)
+
+        if i ==0:
+            ax[i].set_ylabel(r'$\log\ (R_{half} / \textrm{kpc})$' ,fontsize=16)
+            cbar = fig.colorbar(im,ax=ax.ravel().tolist(), label=r'$\textrm{log} (\textrm{sSFR} / \textrm{Gyr}^{-1})$')
+            cbar.ax.tick_params(labelsize=12)
+
 plt.savefig(plot_dir+'halflight_'+model+'.png', bbox_inches='tight', format='png')
 plt.clf()
 
