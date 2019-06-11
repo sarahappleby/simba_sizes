@@ -61,11 +61,18 @@ for m in masks:
             
             h1_frac_tukey = np.zeros((3, n)); h1_frac_large_scale = np.zeros((3, n)); h1_frac_small_scale = np.zeros((3, n))
             h1_mass_tukey = np.zeros((3, n)); h1_mass_large_scale = np.zeros((3, n)); h1_mass_small_scale = np.zeros((3, n))
-            
+            h1_mass_sm_median = np.zeros((3, n)); h1_mass_sm_lower = np.zeros((3, n)); h1_mass_sm_higher = np.zeros((3, n)) 
+            h1_mass_sm_mean = np.zeros((3, n)); h1_mass_sm_sigma = np.zeros((3, n))
+
             h2_frac_tukey = np.zeros((3, n)); h2_frac_large_scale = np.zeros((3, n)); h2_frac_small_scale = np.zeros((3, n))
             h2_mass_tukey = np.zeros((3, n)); h2_mass_large_scale = np.zeros((3, n)); h2_mass_small_scale = np.zeros((3, n))
+            h2_mass_sm_median = np.zeros((3, n)); h2_mass_sm_lower = np.zeros((3, n)); h2_mass_sm_higher = np.zeros((3, n))
+            h2_mass_sm_mean = np.zeros((3, n)); h2_mass_sm_sigma = np.zeros((3, n))
+
 
     	gas_ssfr = gas_sfr / star_m
+        h1_mass_sm = gas_h1*gas_m / star_m
+        h2_mass_sm = gas_h2*gas_m / star_m
 
 	no_gals[m] = len(star_m)
 
@@ -78,7 +85,7 @@ for m in masks:
 	sm_sigma[m] = np.std(star_m, axis=0)
 
 
-        # gas particle profiles
+        # sfr and ssfr
 
 	gas_sfr_median[m] = np.nanpercentile(gas_sfr, '50', axis=0)
 	gas_sfr_lower[m] = np.nanpercentile(gas_sfr, '25', axis=0)
@@ -111,6 +118,13 @@ for m in masks:
         h1_mass_tukey[m] = np.log10(tukey)
         h1_mass_large_scale[m] = scale / (np.log(10.)*tukey)
         h1_mass_small_scale[m] = scale / (np.sqrt(no_gals[m])* np.log(10.)*tukey)
+        
+        h1_mass_sm_median[m] = np.nanpercentile(h1_mass_sm, '50', axis=0)
+        h1_mass_sm_lower[m] = np.nanpercentile(h1_mass_sm, '25', axis=0)
+        h1_mass_sm_higher[m] = np.nanpercentile(h1_mass_sm, '75', axis=0)
+        h1_mass_sm_mean[m] = np.mean(h1_mass_sm, axis=0)
+        h1_mass_sm_sigma[m] = np.std(h1_mass_sm, axis=0)
+
 
         tukey, scale = tukey_biweight(gas_h2)
         h2_frac_tukey[m] = np.log10(tukey)
@@ -120,6 +134,13 @@ for m in masks:
         h2_mass_tukey[m] = np.log10(tukey)
         h2_mass_large_scale[m] = scale / (np.log(10.)*tukey)
         h2_mass_small_scale[m] = scale / (np.sqrt(no_gals[m])* np.log(10.)*tukey)
+
+        h2_mass_sm_median[m] = np.nanpercentile(h2_mass_sm, '50', axis=0)
+        h2_mass_sm_lower[m] = np.nanpercentile(h2_mass_sm, '25', axis=0)
+        h2_mass_sm_higher[m] = np.nanpercentile(h2_mass_sm, '75', axis=0)
+        h2_mass_sm_mean[m] = np.mean(h2_mass_sm, axis=0)
+        h2_mass_sm_sigma[m] = np.std(h2_mass_sm, axis=0)
+
 
 for m in range(len(bin_labels)):
 	plt.semilogy(bins+(dr*0.5), sm_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
@@ -232,6 +253,24 @@ plt.savefig(results_dir+'h1_mass_tukey.png')
 plt.clf()
 
 for m in range(len(bin_labels)):
+        plt.plot(bins+(dr*0.5), h1_mass_sm_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
+        plt.fill_between(bins+(dr*0.5), h1_mass_sm_lower[m], h1_mass_sm_higher[m], alpha=0.3)
+plt.legend()
+plt.xlabel(r'$R_{half}$')
+plt.ylabel(r'$ M_{HI} / M_*$')
+plt.savefig(results_dir+'h1_mass_sm_medians.png')
+plt.clf()
+for m in range(len(bin_labels)):
+        plt.errorbar(bins+(dr*0.5), h1_mass_sm_mean[m], yerr=h1_mass_sm_sigma[m], marker='.', markersize=4, linestyle='--',
+                                label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
+plt.legend()
+plt.xlabel('$R_{half}$')
+plt.ylabel(r'$ M_{HI} / M_*$')
+plt.savefig(results_dir+'h1_mass_sm_means.png')
+plt.clf()
+
+
+for m in range(len(bin_labels)):
     plt.plot(bins+(dr*0.5), h2_frac_tukey[m], marker='.', markersize=4, linestyle='-', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
     #plt.fill_between(bins+(dr*0.5), h2_frac_tukey[m] - h2_frac_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], alpha=0.1)
     plt.fill_between(bins+(dr*0.5), h2_frac_tukey[m] - h2_frac_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], alpha=0.3)
@@ -256,5 +295,22 @@ if factor == 2:
 else:
     plt.xlim(0, factor)
 plt.savefig(results_dir+'h2_mass_tukey.png')
+plt.clf()
+
+for m in range(len(bin_labels)):
+        plt.plot(bins+(dr*0.5), h2_mass_sm_median[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
+        plt.fill_between(bins+(dr*0.5), h2_mass_sm_lower[m], h2_mass_sm_higher[m], alpha=0.3)
+plt.legend()
+plt.xlabel(r'$R_{half}$')
+plt.ylabel(r'$ M_{H_2} / M_*$')
+plt.savefig(results_dir+'h2_mass_sm_medians.png')
+plt.clf()
+for m in range(len(bin_labels)):
+        plt.errorbar(bins+(dr*0.5), h2_mass_sm_mean[m], yerr=h2_mass_sm_sigma[m], marker='.', markersize=4, linestyle='--',
+                                label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
+plt.legend()
+plt.xlabel('$R_{half}$')
+plt.ylabel(r'$ M_{H_2} / M_*$')
+plt.savefig(results_dir+'h2_mass_sm_means.png')
 plt.clf()
 
