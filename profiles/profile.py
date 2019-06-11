@@ -20,14 +20,14 @@ time = (age_max - age_min) * 1.e6
 rotate_galaxies = False
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
-n = 50 # number of bins
-factor = 10.
-dr = factor / n
+factor = 5.
+dr = 0.2
+n = int(factor / dr)
 rplot = np.arange(0., dr*n, dr) + (dr*0.5)
 
 # for making profiles
-mass_bins = [10., 10.5, 11.]
-bin_labels = ['10.0 - 10.5', '10.5 - 11.0', '> 11.0']
+mass_bins = [9., 9.5, 10., 10.5, 11.]
+bin_labels = ['9.0 - 9.5', '9.5 - 10.0', '10.0 - 10.5', '10.5 - 11.0', '> 11.0']
 
 model = sys.argv[1]
 wind = sys.argv[2]
@@ -100,7 +100,7 @@ no_gals = np.zeros(3)
 for m in range(len(mass_bins)):
         print '\n'
         print 'Looking at mass bin ' + bin_labels[m]
-        if m != 2:
+        if m != 5:
                 sm_mask = (gal_sm > mass_bins[m]) & (gal_sm < mass_bins[m+1])
         else:
                 sm_mask = gal_sm > mass_bins[m]
@@ -115,6 +115,7 @@ for m in range(len(mass_bins)):
         print '\n'
 
         use_star_m = np.zeros((len(gal_ids_use), n))
+        use_gas_m = np.zeros((len(gal_ids_use), n))
         use_gas_sfr = np.zeros((len(gal_ids_use), n))
         use_gas_h1 = np.zeros((len(gal_ids_use), n))
         use_gas_h2 = np.zeros((len(gal_ids_use), n))
@@ -181,10 +182,11 @@ for m in range(len(mass_bins)):
                 plot_name = results_dir + '/images/gal_'+str(gal_ids_use[i]) + '_gas.png'
                 make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
 
+                use_gas_m[i] = make_profile(n, dr, r, mass, rhalf)
                 use_gas_sfr[i] = make_profile(n, dr, r, sfr, rhalf)
                 use_gas_h1[i] = make_profile(n, dr, r, h1, rhalf)
                 use_gas_h2[i] = make_profile(n, dr, r, h2, rhalf)
-
+                
                 plot_profile(rplot, use_gas_sfr[i], results_dir+'/profiles/gas_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
                 plot_profile(rplot, use_gas_h1[i], results_dir+'/profiles/gas_h1_profile_gal_'+str(gal_ids_use[i])+'.png', 'HI fraction surface density', title=title)
                 plot_profile(rplot, use_gas_h2[i], results_dir+'/profiles/gas_h2_profile_gal_'+str(gal_ids_use[i])+'.png', 'HII fraction surface density', title=title)
@@ -193,6 +195,7 @@ for m in range(len(mass_bins)):
                 f.create_dataset('gas_sfr', data=np.array(use_gas_sfr))
                 f.create_dataset('h1', data=np.array(use_gas_h1))
                 f.create_dataset('h2', data=np.array(use_gas_h2))
+                f.create_dataset('gm', data=np.array(use_gas_m))
                 f.create_dataset('sm', data=np.array(use_star_m))
                 f.create_dataset('gal_ids', data=np.array(gal_ids_use))
 
