@@ -35,7 +35,7 @@ def gv_check(x0, y0, b1, b2):
 
 gv_ssfr_min = -13.
 
-masses = [10., 10.5, 11.]
+masses = [9., 9.5, 10., 10.5, 11.]
 
 model = sys.argv[1]
 wind = sys.argv[2]
@@ -64,7 +64,6 @@ sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5', LoadHalo=False)
 gal_cent = np.array([i.central for i in sim.galaxies])
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
-gal_sfr[np.where(gal_sfr == 1.)[0]] = 0.
 gal_ssfr = np.log10(gal_sfr / gal_sm)
 
 gal_sm = np.log10(gal_sm)
@@ -108,8 +107,53 @@ plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
 plt.legend()
 plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
 plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
+plt.savefig(plots_dir+'b18_sample_all_colormap.png')
+plt.clf()
+
+plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+if selection == '1':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+elif selection == '2':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 1 dex')
+else:
+        plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+        plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
+plt.axvline(10., ls='--', lw=1.5, c='k')
+plt.axvline(10.5, ls='--', lw=1.5, c='k')
+plt.axvline(11., ls='--', lw=1.5, c='k')
+plt.scatter(gal_sm[gal_cent], gal_sfr[gal_cent], s=1, c=gal_ssfr[gal_cent], cmap=new_cmap)
+plt.xlim(9., 11.5)
+plt.ylim(-3.5, )
+plt.clim(-12, -9)
+plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
+plt.legend()
+plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
+plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
 plt.savefig(plots_dir+'b18_sample_centrals_colormap.png')
 plt.clf()
+
+plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+if selection == '1':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+elif selection == '2':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 1 dex')
+else:
+        plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+        plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
+plt.axvline(10., ls='--', lw=1.5, c='k')
+plt.axvline(10.5, ls='--', lw=1.5, c='k')
+plt.axvline(11., ls='--', lw=1.5, c='k')
+plt.scatter(gal_sm[np.invert(gal_cent)], gal_sfr[np.invert(gal_cent)], s=1, c=gal_ssfr[np.invert(gal_cent)], cmap=new_cmap)
+plt.xlim(9., 11.5)
+plt.ylim(-3.5, )
+plt.clim(-12, -9)
+plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
+plt.legend()
+plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
+plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
+plt.savefig(plots_dir+'b18_sample_satellites_colormap.png')
+plt.clf()
+
 
 plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
 if selection == '1':
