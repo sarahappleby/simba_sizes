@@ -23,7 +23,7 @@ if len(sys.argv)==5: plotvar=sys.argv[4]
 MODEL = 'm50n512'
 #SNAP = int(sys.argv[2])
 WIND = ['s50j7k', 's50noagn', 's50nojet', 's50nox']
-WIND = ['s50j7k']
+WIND = ['s50nojet', 's50nox']
 #plt.rc('text', usetex=True)
 mlim = 8.7
 mmax = 12.7
@@ -31,7 +31,7 @@ conc = False
 
 snaps = ['151', '125', '105', '090', '078', '062']
 snaps = ['151']
-save_file = './halfradius_agn.h5'
+save_file = '/home/sapple/simba_sizes/sizes/data/halfradius_agn_R.h5'
 #plot_dir = '/home/sapple/simba_sizes/sizes/plots/'
 
 '''
@@ -42,50 +42,6 @@ if plotvar not in ['mstar','sfr']:
     spop = fsps.StellarPopulation(zcontinuous=1, sfh=0, logzsol=0.0, dust_type=2, dust2=0.2)
     #print spop.ssp_ages
 '''
-
-def plot_data(z):
-  if z < 0.5: # Zhang+17 SDSS
-    ms_data = np.linspace(9,12.0,20)
-    alpha = 0.24
-    beta = 1.33
-    gamma = 10.17
-    M0 = 6.49e11/0.68**2
-    logRe_spiral = np.log10(gamma * (10**ms_data/M0)**alpha * (1+10**ms_data/M0)**(beta-alpha))
-    plt.plot(ms_data,logRe_spiral,':',color='b',lw=3,label='SDSS-Blue')
-    alpha = 0.17
-    beta = 0.58
-    gamma = 2.24
-    M0 = 2.11e10/0.68**2
-    logRe_etg = np.log10(gamma * (10**ms_data/M0)**alpha * (1+10**ms_data/M0)**(beta-alpha))
-    plt.plot(ms_data,logRe_etg,':',color='r',lw=3,label='SDSS-Red')
-    # Kelvin+11 GAMA
-    #logRe_spiral = 0.4+0.3*(ms_data-9)
-    #plt.plot(ms_data,logRe_spiral,'-.',color='b',lw=2,label='GAMA-Blue')
-  if z >= 0.5 and z < 1.5: # vdWel+14 CANDELS
-    logms = [9.25,9.75,10.25,10.75,11.25]
-    logRe = [0.37,0.48,0.57,0.67,0.82]
-    eRelo = [0.26,0.27,0.24,0.20,0.20]
-    eRehi = [0.23,0.21,0.20,0.24,0.14]
-    #plt.plot(logms,logRe,'o',color='k',ms=6,label='CANDELS LTG (van der Wel+14)')
-    plt.errorbar(np.array(logms)-0.05,logRe,lw=1,yerr=[eRelo,eRehi],fmt='bo',ecolor='b',label='CANDELS LTG')
-    logms = [9.25,9.75,10.25,10.75,11.25]
-    logRe = [0.23,0.20,0.16,0.38,0.70]
-    eRelo = [0.25,0.33,0.26,0.23,0.27]
-    eRehi = [0.20,0.34,0.27,0.24,0.23]
-    #plt.plot(logms,logRe,'o',color='k',ms=6,label='CANDELS ETG (van der Wel+14)')
-    plt.errorbar(np.array(logms)+0.05,logRe,lw=1,yerr=[eRelo,eRehi],fmt='ro',ecolor='r',label='CANDELS ETG')
-  if z >= 1.5 and z < 2.5:
-    # Alcorn+16 CANDELS+ZFOURGE
-    ms_data = np.linspace(9,11.5,5)
-    re_data = 0.2*(ms_data-10)+0.4
-    plt.plot(ms_data,re_data,'-',color='k',lw=4,label='CANDELS+ZFOURGE (Allen+16)')
-    # vdWel+14 CANDELS
-    logms = [9.75,10.25,10.75,11.25]
-    logRe = [0.39,0.44,0.47,0.62]
-    eRelo = [0.27,0.32,0.39,0.30]
-    eRehi = [0.23,0.21,0.24,0.21]
-    plt.plot(logms,logRe,'o',color='k',ms=6,label='CANDELS (van der Wel+14)')
-    plt.errorbar(logms,logRe,lw=2,yerr=[eRelo,eRehi],color='k')
 
 def compute_rfrac(idir0,mass,pos, frac=0.5):
     idir1 = (idir0+1)%3
@@ -190,50 +146,3 @@ for SNAP in snaps:
                 elif conc:
                     hf.create_dataset(MODEL+'_'+WIND[iwind]+'_'+str(SNAP)+'_r20', data=np.array(r20))
                     hf.create_dataset(MODEL+'_'+WIND[iwind]+'_'+str(SNAP)+'_r80', data=np.array(r80))
-
-"""
-    #print len(ms),len(sigv3d),len(sigmastar)
-    ssfr = 1.e9*sfr/ms
-    ssfr = np.log10(ssfr+10**(-2.9+0.3*redshift))
-    ssfrlim = -1.8+0.3*redshift
-    rad = (rhalf[0]+rhalf[1]+rhalf[2])/3
-
-    condition = (central)
-    massbin,cvecbin,ebinlo,ebinhi = pm.runningmedian(np.log10(ms[condition]),ssfr[condition])
-    cvec = ssfr# - np.interp(np.log10(ms),massbin,cvecbin)
-
-    xvec = np.log10(ms[rad>0])
-    yvec = np.log10(rad[rad>0])
-    cvec = cvec[rad>0]
-    pixsize = 1*(xvec-min(xvec))+0.5
-    im = ax.scatter(xvec, yvec, c=cvec, s=pixsize, lw=0, cmap=plt.cm.jet_r)
-    #plt.plot(xvec, yvec, 'o', c='k', ms=2)
-    fig.colorbar(im,ax=ax,label=r'$\log$ sSFR (Gyr$^{-1}$)')
-    if redshift <= 1.5:
-        bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr>ssfrlim]),np.log10(rad[ssfr>ssfrlim]),bins=16)
-        ax.plot(bin_cent,ymean,'-',lw=3,color='c',label='Simba-SF')
-        #ax.errorbar(bin_cent,ymean,yerr=[ysiglo,ysighi],fmt='ro',c='c')
-        bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr<ssfrlim]),np.log10(rad[ssfr<ssfrlim]),bins=16)
-        ax.plot(bin_cent,ymean,'-',lw=3,color='m',label='Simba-Q')
-        #ax.errorbar(bin_cent,ymean,yerr=[ysiglo,ysighi],fmt='ro',c='r')
-    else:
-        bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(xvec,yvec)
-        ax.plot(bin_cent,ymean,'--',lw=3,color='g')
-    #im.set_clim(-0.5,0.5)
-
-plot_data(redshift)
-#plot_data(0,'.')
-
-plt.annotate('z=%g'%(np.round(redshift,1)), xy=(0.1, 0.9), xycoords='axes fraction',size=16,bbox=dict(boxstyle="round", fc="w"))
-
-plt.minorticks_on()
-plt.xlim(mlim+0.3,mmax)
-plt.ylim(-0.2,1.8-0.3*redshift)
-plt.xlabel(r'$\log\ M_{*}$',fontsize=20)
-plt.ylabel(r'$\log\ R_{half}$' ,fontsize=20)
-plt.legend(loc='lower right')
-
-plt.savefig(plot_dir+'halfmass_%s.pdf'%MODEL, bbox_inches='tight', format='pdf')
-
-plt.show()
-"""

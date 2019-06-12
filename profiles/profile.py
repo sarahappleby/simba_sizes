@@ -28,6 +28,7 @@ rplot = np.arange(0., dr*n, dr) + (dr*0.5)
 # for making profiles
 mass_bins = [9., 9.5, 10., 10.5, 11.]
 bin_labels = ['9.0 - 9.5', '9.5 - 10.0', '10.0 - 10.5', '10.5 - 11.0', '> 11.0']
+masks = range(len(bin_labels))
 
 model = sys.argv[1]
 wind = sys.argv[2]
@@ -39,6 +40,13 @@ if 'gv' in sample_file.split('/', -1)[-1]:
     selection = 'green_valley'
 elif 'sf' in sample_file.split('/', -1)[-1]:
     selection = 'star_forming'
+
+if 'satellites' in results_dir:
+    centrals = False
+    print 'Looking at satellite galaxies'
+else:
+    centrals = True
+    print 'Looking at central galaxies'
 
 results_dir += '/'+model + '_' + snap + '/' + selection
 if rotate_galaxies:
@@ -66,7 +74,8 @@ h = sim.simulation.hubble_constant
 redshift = sim.simulation.redshift
 
 # load in the caesar galaxy data to make an initial cut of star forming galaxies
-gal_cent = np.invert(np.array([i.central for i in sim.galaxies]))
+gal_cent = np.array([i.central for i in sim.galaxies])
+if centrals: gal_cent = np.invert(gal_cent)
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
 gal_ssfr = gal_sfr / gal_sm
@@ -95,12 +104,12 @@ gas_h2 = readsnap(snapfile, 'fh2', 'gas', suppress=1, units=1)
 
 bh_pos = readsnap(snapfile, 'pos', 'bndry', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 
-no_gals = np.zeros(3)
+no_gals = np.zeros(len(bin_labels))
 
-for m in range(len(mass_bins)):
+for m in masks:
         print '\n'
         print 'Looking at mass bin ' + bin_labels[m]
-        if m != 5:
+        if m != len(mass_bins) - 1:
                 sm_mask = (gal_sm > mass_bins[m]) & (gal_sm < mass_bins[m+1])
         else:
                 sm_mask = gal_sm > mass_bins[m]
