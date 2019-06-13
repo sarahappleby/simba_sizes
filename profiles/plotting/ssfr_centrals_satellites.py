@@ -8,14 +8,16 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rcParams.update({'font.size': 12})
 
-basic_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/'
-gv_centrals_dir = basic_dir + 'centrals/m100n1024_151/green_valley/random_orientation/'
-gv_sats_dir = basic_dir + 'satellites/m100n1024_151/green_valley/random_orientation/'
-sf_centrals_dir = basic_dir + 'centrals/m100n1024_151/star_forming/random_orientation/'
-sf_sats_dir = basic_dir + 'satellites/m100n1024_151/star_forming/random_orientation/'
+wind = 's50j7k'
 
-bin_labels = [r'$9.0 - 9.5$', r'$9.5 - 10.0$', r'$10.0 - 10.5$', r'$10.5 - 11.0$', r'$> 11.0$']
-masks = [0, 1, 2, 3, 4]
+basic_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/'
+gv_centrals_dir = basic_dir + 'centrals/m100n1024_151/'+wind+'/green_valley/random_orientation/'
+gv_sats_dir = basic_dir + 'satellites/m100n1024_151/'+wind+'/green_valley/random_orientation/'
+sf_centrals_dir = basic_dir + 'centrals/m100n1024_151/'+wind+'/star_forming/random_orientation/'
+sf_sats_dir = basic_dir + 'satellites/m100n1024_151/'+wind+'/star_forming/random_orientation/'
+
+bin_labels = [r'$9.0 - 9.5$', r'$9.5 - 10.0$', r'$10.0 - 10.5$', r'$>10.5$']
+masks = [0, 1, 2, 3]
 
 colors = ['o', 'g', 'b', 'm', 'r']
 
@@ -29,6 +31,13 @@ for i, m in enumerate(masks):
     with h5py.File(sf_centrals_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
         star_m = f['sm'].value
         gas_sfr = f['gas_sfr'].value
+
+    if m == 3:
+        with h5py.File(sf_centrals_dir+'mask_'+str(m+1)+'_all_profiles.h5', 'r') as f:
+            star_m = np.concatenate((star_m, f['sm'].value))
+            gas_m = np.concatenate((gas_m, f['gm'].value))
+            gas_h1 = np.concatenate((gas_h1, f['h1'].value))
+            gas_h2 = np.concatenate((gas_h2, f['h2'].value))
 
     if i == 0:
         n = star_m.shape[1]
@@ -57,6 +66,13 @@ for i, m in enumerate(masks):
     with h5py.File(sf_sats_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
         star_m = f['sm'].value
         gas_sfr = f['gas_sfr'].value
+
+    if m == 3:
+        with h5py.File(sf_sats_dir+'mask_'+str(m+1)+'_all_profiles.h5', 'r') as f:
+            star_m = np.concatenate((star_m, f['sm'].value))
+            gas_m = np.concatenate((gas_m, f['gm'].value))
+            gas_h1 = np.concatenate((gas_h1, f['h1'].value))
+            gas_h2 = np.concatenate((gas_h2, f['h2'].value))
 
     if i == 0:
         n = star_m.shape[1]
@@ -93,6 +109,13 @@ for i, m in enumerate(masks):
         star_m = f['sm'].value
         gas_sfr = f['gas_sfr'].value
 
+    if m == 3:
+        with h5py.File(gf_centrals_dir+'mask_'+str(m+1)+'_all_profiles.h5', 'r') as f:
+            star_m = np.concatenate((star_m, f['sm'].value))
+            gas_m = np.concatenate((gas_m, f['gm'].value))
+            gas_h1 = np.concatenate((gas_h1, f['h1'].value))
+            gas_h2 = np.concatenate((gas_h2, f['h2'].value))
+
     if i == 0:
         n = star_m.shape[1]
         dr = 0.2
@@ -120,6 +143,13 @@ for i, m in enumerate(masks):
     with h5py.File(gf_sats_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
         star_m = f['sm'].value
         gas_sfr = f['gas_sfr'].value
+
+    if m == 3:
+        with h5py.File(gf_sats_dir+'mask_'+str(m+1)+'_all_profiles.h5', 'r') as f:
+            star_m = np.concatenate((star_m, f['sm'].value))
+            gas_m = np.concatenate((gas_m, f['gm'].value))
+            gas_h1 = np.concatenate((gas_h1, f['h1'].value))
+            gas_h2 = np.concatenate((gas_h2, f['h2'].value))
 
     if i == 0:
         n = star_m.shape[1]

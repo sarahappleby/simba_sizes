@@ -8,15 +8,18 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rcParams.update({'font.size': 12})
 
-gv_dir = '/home/sapple/simba_sizes/profiles/science/ssfr/belfiore/extended_profiles/centrals/m100n1024_151/green_valley/random_orientation/'
-sf_dir = '/home/sapple/simba_sizes/profiles/science/ssfr/belfiore/extended_profiles/centrals/m100n1024_151/star_forming/random_orientation/'
-gv_dir = '/home/sapple/simba_sizes/profiles/science/ssfr/belfiore/inner_galaxy/m100n1024_145/green_valley/random_orientation/bh_centered/'
-sf_dir = '/home/sapple/simba_sizes/profiles/science/ssfr/belfiore/inner_galaxy/m100n1024_145/star_forming/random_orientation/bh_centered/'
+wind = 's50j7k'
+
+gv_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/centrals/m100n1024_151/'+wind+'/green_valley/random_orientation/'
+sf_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/centrals/m100n1024_151/'+wind+'/star_forming/random_orientation/'
+
+#old:
+#gv_dir = '/home/sapple/simba_sizes/profiles/ssfr/inner_galaxy/m100n1024_145/green_valley/random_orientation/bh_centered/'
+#sf_dir = '/home/sapple/simba_sizes/profiles/ssfr/inner_galaxy/m100n1024_145/star_forming/random_orientation/bh_centered/'
 results_dir = '/home/sapple/simba_sizes/profiles/plotting/'
 
-bin_labels = [r'$10.0 - 10.5$', r'$10.5 - 11.0$', r'$> 11.0$']
-masses = [10.0, 10.5, 11.0, 11.5]
 masks = [2, 3, 4]
+bin_labels = [r'$10.0 - 10.5$', r'$10.5 - 11.0$', r'$> 11.0$']
 colors = ['b', 'm', 'r']
 
 fig, ax = plt.subplots(1, 2, figsize=(15, 6))
@@ -49,11 +52,11 @@ for m in range(len(bin_labels)):
     if m == 0:
         ax[0].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], color=colors[m], alpha=0.1)
     ax[0].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], color=colors[m], alpha=0.3)
-ax[0].set_xlabel(r'$R_{half}$')
-ax[0].set_ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
+ax[0].set_xlabel(r'$R_{half}$', fontsize=16)
+ax[0].set_ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$', fontsize=16)
 ax[0].set_xlim(0, 1.5)
 ax[0].set_ylim(-12.5, -9.)
-ax[0].legend()
+ax[0].legend(fontsize=10)
 
 no_gals = np.zeros(3)
 # for the green valley galaxies:
@@ -83,12 +86,11 @@ for m in range(len(bin_labels)):
     if m == 0:
         ax[1].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], color=colors[m], alpha=0.1)
     ax[1].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], color=colors[m], alpha=0.3)
-ax[1].set_xlabel(r'$R_{half}$')
-ax[1].set_ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
+ax[1].set_xlabel(r'$R_{half}$', fontsize=16)
+ax[1].set_ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$', fontsize=16)
 ax[1].set_xlim(0, 1.5)
 ax[1].set_ylim(-12.5, -9.)
-ax[1].legend()
+ax[1].legend(fontsize=10)
 
-
-plt.savefig(results_dir+'ssfr_profiles_belfiore.png')
+plt.savefig(results_dir+'ssfr_profiles_'+wind+'_belfiore.png')
 plt.clf()
