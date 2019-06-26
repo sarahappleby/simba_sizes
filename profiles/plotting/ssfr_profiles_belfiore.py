@@ -8,10 +8,12 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rcParams.update({'font.size': 12})
 
-wind = 's50j7k'
+model = sys.argv[1]
+wind = sys.argv[2]
+snap = sys.argv[3]
 
-gv_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/centrals/m100n1024_151/'+wind+'/green_valley/random_orientation/'
-sf_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/centrals/m100n1024_151/'+wind+'/star_forming/random_orientation/'
+gv_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/centrals/'+model+'_'+snap+'/'+wind+'/green_valley/random_orientation/'
+sf_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/centrals/'+model+'_'+snap+'/'+wind+'/star_forming/random_orientation/'
 
 #old:
 #gv_dir = '/home/sapple/simba_sizes/profiles/ssfr/inner_galaxy/m100n1024_145/green_valley/random_orientation/bh_centered/'
@@ -21,6 +23,7 @@ results_dir = '/home/sapple/simba_sizes/profiles/plotting/'
 masks = [2, 3, 4]
 bin_labels = [r'$10.0 - 10.5$', r'$10.5 - 11.0$', r'$> 11.0$']
 colors = ['b', 'm', 'r']
+mass_c=[10.0,  10.5, 11., 11.5]
 
 fig, ax = plt.subplots(1, 2, figsize=(15, 6))
 
@@ -46,7 +49,7 @@ for i, m in enumerate(masks):
     gas_ssfr_large_scale[i] = scale / (np.log(10.)*tukey)
     gas_ssfr_small_scale[i] = scale / (np.sqrt(no_gals[i])* np.log(10.)*tukey)
 
-plot_belfiore(ax[0], 'sf', colors, mass_c=[10.0,  10.5, 11., 11.5])
+plot_belfiore(ax[0], 'sf', colors, mass_c=mass_c)
 for m in range(len(bin_labels)):
     ax[0].plot(bins+(dr*0.5), gas_ssfr_tukey[m], color=colors[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
     if m == 0:
@@ -80,7 +83,7 @@ for i, m in enumerate(masks):
     gas_ssfr_large_scale[i] = scale / (np.log(10.)*tukey)
     gas_ssfr_small_scale[i] = scale / (np.sqrt(no_gals[i])* np.log(10.)*tukey)
 
-plot_belfiore(ax[1], 'gv', colors, mass_c=[10.0,  10.5, 11., 11.5])
+plot_belfiore(ax[1], 'gv', colors, mass_c=mass_c)
 for m in range(len(bin_labels)):
     ax[1].plot(bins+(dr*0.5), gas_ssfr_tukey[m], color=colors[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
     if m == 0:
