@@ -30,18 +30,7 @@ def tage(cosmo,thubble,a):
 	"""
 	return thubble-cosmo.age(1./a-1).value
 
-def make_profile_old(NR, DR, r, quantity):
-	profile = np.zeros(NR)
-	# make profile of total mass of stars with ages 50Myr - 100Myr
-	for j in range(0, NR):
-		mask = (r >= j*DR)*(r < (j+1)*DR)
-		profile[j] = np.sum(quantity[mask])
-		if (j==0):
-			profile[j] /= np.pi*DR*DR
-		else:
-			profile[j] /= np.pi*(DR*DR*(j+1)*(j+1) - DR*DR*j*j)
-	return profile
-
+# for normalised profiles in physical units:
 def make_profile(n, dr, r, quantity, rhalf):
 
 	surface_density = np.zeros(n)
@@ -53,6 +42,38 @@ def make_profile(n, dr, r, quantity, rhalf):
 		else:
 			surface_density[j] /= np.pi*((dr*(j+1)*rhalf)**2 - (dr*j*rhalf)**2)	
 	return surface_density
+
+# for physical profiles:
+def real_profile(n, dr, r, quantity):
+        surface_density = np.zeros(n)
+        for j in range(0, n):
+                mask = (r >= j*dr)*(r < (j+1)*dr)
+                surface_density[j] = np.sum(quantity[mask])
+                if (j==0):
+                        surface_density[j] /= np.pi*(dr**2)
+                else:
+                        surface_density[j] /= np.pi*((dr*(j+1))**2 - (dr*j)**2)
+        return surface_density
+
+def hi_profile(r, dr, h1_mass, h1_limit):
+        profile = []
+        radius = []
+        j = 0
+        stop = False
+        while not stop:
+            mask = (r >= j*dr) * (r < (j+1)*dr)
+            profile.append(np.sum(h1_mass*mask))
+            radius.append(j*dr + 0.5*dr)
+            if j == 0:
+                profile[-1] /= np.pi*(dr**2)
+            else:
+                profile[-1] /= np.pi* ( (dr*(j+1))**2 - (dr*j)**2)
+            if (profile[-1] <= h1_limit)  :
+                stop = True
+            else:
+                j += 1
+        return profile[:-1], radius[:-1]
+
 
 def plot_profile(r, profile, filename, ylabel, xlabel='R half *', title='', ylim=None):
 	plt.plot(r, profile, linestyle='--', marker='.')
