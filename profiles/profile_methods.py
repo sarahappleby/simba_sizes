@@ -1,12 +1,15 @@
 import numpy as np 
 import matplotlib.pyplot as plt
+from scipy.ndimage.filters import gaussian_filter
 
-def make_image(posx, posy, weight, filename, rcirc=None, Npixels=100):
+def make_image(posx, posy, weight, filename, rcirc=None, clabel=None, Npixels=100):
 	xmin = -20.
 	xmax = 20.
 	im,xedges,yedges=np.histogram2d(posx,posy,bins=(Npixels,Npixels),weights=weight)
 	im=im/((xmax-xmin)/float(Npixels))**2
-	extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+	sigma = 0.5*Npixels/(xedges.max()-xedges.min())
+        im = gaussian_filter(im, sigma)
+        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 	v_min = np.min(np.log10(im[im>0]))
 	v_max = np.max(np.log10(im[im>0]))
 
@@ -14,8 +17,8 @@ def make_image(posx, posy, weight, filename, rcirc=None, Npixels=100):
 				vmin=v_min,vmax=v_max, origin="lower")
 	if rcirc:
 		plt.title('Radius: '+ str(rcirc))
-	plt.plot(0., 0., c='w', ms=15, marker='.')
-	plt.colorbar()
+	#plt.plot(0., 0., c='w', ms=15, marker='.')
+	plt.colorbar(label=clabel)
 	plt.savefig(filename)
 	plt.clf()
 
@@ -85,6 +88,18 @@ def plot_profile(r, profile, filename, ylabel, xlabel='R half *', title='', ylim
 	plt.xlim(0, )
 	plt.savefig(filename)
 	plt.clf()
+
+def plot_h1_profile(r, profile, filename, ylabel, xlabel='R half *', title='', ylim=None):
+        plt.plot(r, profile, linestyle='--', marker='.')
+        plt.ylabel(ylabel)
+        plt.xlabel(xlabel)
+        plt.axhline(1., linestyle='--', c='k', lw=1.5)
+        plt.title(title)
+        if ylim:
+                plt.xlim(ylim, )
+        plt.xlim(0, )
+        plt.savefig(filename)
+        plt.clf()
 
 def bin_data(samples, bins):
 	"""
