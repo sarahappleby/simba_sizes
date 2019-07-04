@@ -23,19 +23,28 @@ no_gals = np.zeros(len(bin_labels))
 
 for i, m in enumerate(masks):
 
+    """
     try:
-        with h5py.File(profile_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
-            ages = f['ages'].value
-        if satellites & (m == 3):
-            with h5py.File(profile_dir+'mask_'+str(m+1)+'_all_profiles.h5', 'r') as f:
-                ages = np.concatenate((ages, f['ages'].value))
-
-    except KeyError:
         with h5py.File(profile_dir+'mask_'+str(m)+'_star_ages.h5', 'r') as f:
             ages = f['ages'].value
         if satellites & (m == 3):
             with h5py.File(profile_dir+'mask_'+str(m+1)+'_star_ages.h5', 'r') as f:
                 ages = np.concatenate((ages, f['ages'].value))
+
+    except KeyError:
+        with h5py.File(profile_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
+            ages = f['ages'].value
+        if satellites & (m == 3):
+            with h5py.File(profile_dir+'mask_'+str(m+1)+'_all_profiles.h5', 'r') as f:
+                ages = np.concatenate((ages, f['ages'].value))
+    """
+    with h5py.File(profile_dir+'mask_'+str(m)+'_star_ages.h5', 'r') as f:
+        ages = f['ages'].value
+    if satellites & (m == 3):
+        with h5py.File(profile_dir+'mask_'+str(m+1)+'_star_ages.h5', 'r') as f:
+            ages = np.concatenate((ages, f['ages'].value))
+
+
 
     if i == 0:
         n = ages.shape[1]

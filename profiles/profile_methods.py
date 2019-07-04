@@ -58,7 +58,7 @@ def real_profile(n, dr, r, quantity):
                         surface_density[j] /= np.pi*((dr*(j+1))**2 - (dr*j)**2)
         return surface_density
 
-def hi_profile(r, dr, h1_mass, h1_limit):
+def hi_profile(r, dr, h1_mass, rhalf, h1_limit):
         profile = []
         radius = []
         j = 0
@@ -71,11 +71,11 @@ def hi_profile(r, dr, h1_mass, h1_limit):
                 profile[-1] /= np.pi*(dr**2)
             else:
                 profile[-1] /= np.pi* ( (dr*(j+1))**2 - (dr*j)**2)
-            if (profile[-1] <= h1_limit)  :
+            if (profile[-1] <= h1_limit)  & (j >=int(round(rhalf))):
                 stop = True
             else:
                 j += 1
-        return profile[:-1], radius[:-1]
+        return profile, radius
 
 
 def plot_profile(r, profile, filename, ylabel, xlabel='R half *', title='', ylim=None):
@@ -88,18 +88,6 @@ def plot_profile(r, profile, filename, ylabel, xlabel='R half *', title='', ylim
 	plt.xlim(0, )
 	plt.savefig(filename)
 	plt.clf()
-
-def plot_h1_profile(r, profile, filename, ylabel, xlabel='R half *', title='', ylim=None):
-        plt.plot(r, profile, linestyle='--', marker='.')
-        plt.ylabel(ylabel)
-        plt.xlabel(xlabel)
-        plt.axhline(1., linestyle='--', c='k', lw=1.5)
-        plt.title(title)
-        if ylim:
-                plt.xlim(ylim, )
-        plt.xlim(0, )
-        plt.savefig(filename)
-        plt.clf()
 
 def bin_data(samples, bins):
 	"""
