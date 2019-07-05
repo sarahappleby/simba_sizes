@@ -11,7 +11,7 @@ model = 'm50n512'
 snap = '151'
 wind = 's50j7k'
 plot_dir = './all_pygad_plots/'
-factor = 10.
+factor = 8.
 softening = pg.UnitArr([0., 0., 0., 0., 0.25, 0.], 'ckpc h_0**-1')
 
 xaxis = [0, 1, 2]
@@ -47,6 +47,7 @@ s.gas['mass_h2'] = abundance_h2*mass
 
 for i in gals:
     pos = bh_pos[sim.central_galaxies[i].bhlist[0]]
+    """
     radius = str(round((factor+2)*gal_rad[i], 2)) + ' kpc'
     ball = s[pg.BallMask(radius, center=pos)]
    
@@ -62,11 +63,15 @@ for i in gals:
         pg.plotting.image(ball.gas, qty='mass_h1', xaxis=xaxis[j], yaxis=yaxis[j], ax=axes[j], **args_h1)
     plt.savefig(plot_dir+'gal_'+str(i)+'_h1_pygad.png')
     plt.clf()
+    """
+    radius = str(round((factor)*gal_rad[i], 2)) + ' kpc'
+    ball = s[pg.BallMask(radius, center=pos)]
+    args_h1 = dict(cmap='magma', fontsize=8, Npx=1024, vlim=[10.**3., 10.**9.])
 
     fig, axes = plt.subplots(1,3, figsize=(12,6))
     for j in range(len(xaxis)):
         pg.plotting.image(ball.gas, qty='mass_h2', xaxis=xaxis[j], yaxis=yaxis[j], ax=axes[j], **args_h1)
-    plt.savefig(plot_dir+'gal_'+str(i)+'_h2_pygad.png')
+    plt.savefig(plot_dir+'gal_'+str(i)+'_h2_small_pygad.png')
     plt.clf()
 
 """

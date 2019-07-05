@@ -77,6 +77,9 @@ gas_temp = readsnap(snapfile, 'u', 'gas', suppress=1, units=1)
 bh_pos = readsnap(snapfile, 'pos', 'bndry', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 
 gals = [45, 94, 195, 201, 259, 364]
+gals = [ 20,  21,  45,  48,  51,  55,  94, 107, 110, 116, 121, 138, 145, \
+       149, 161, 169, 184, 195, 201, 230, 235, 262, 300, 304, 334, 391]
+
 """
 gals = []
 
