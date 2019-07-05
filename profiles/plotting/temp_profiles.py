@@ -19,7 +19,7 @@ sf_centrals_dir = basic_dir + 'centrals/'+model+'_'+snap+'/'+wind+'/star_forming
 sf_sats_dir = basic_dir + 'satellites/'+model+'_'+snap+'/'+wind+'/star_forming/random_orientation/'
 data_dirs = [sf_centrals_dir, gv_centrals_dir, sf_sats_dir, gv_sats_dir]
 
-results_dir = '/home/sapple/simba_sizes/profiles/plotting/'
+results_dir = '/home/sapple/simba_sizes/profiles/plotting/plots/'
 
 xlim = [0., 5.]
 ylim = None

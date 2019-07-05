@@ -1,13 +1,8 @@
 import h5py
 import numpy as np 
-import matplotlib.pyplot as plt
 import sys
 import os
 from plotting_methods import tukey_biweight
-
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
-plt.rcParams.update({'font.size': 12})
 
 profile_dir = sys.argv[1]
 results_dir = profile_dir
@@ -16,12 +11,10 @@ if 'satellites' in profile_dir:
     satellites = True
     masks = [2, 3]
     bin_labels = ['10.0-10.5', '>10.5']
-    colors = ['b', 'm']
 else: 
     satellites = False
     masks = [2, 3, 4]
     bin_labels = ['10.0-10.5', '10.5-11.0', '>11.0']
-    colors = ['b', 'm', 'r']
 
 no_gals = np.zeros(len(bin_labels))
 

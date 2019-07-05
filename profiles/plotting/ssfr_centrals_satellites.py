@@ -17,7 +17,7 @@ gv_centrals_dir = basic_dir + 'centrals/'+model+'_'+snap+'/'+wind+'/green_valley
 gv_sats_dir = basic_dir + 'satellites/'+model+'_'+snap+'/'+wind+'/green_valley/random_orientation/'
 sf_centrals_dir = basic_dir + 'centrals/'+model+'_'+snap+'/'+wind+'/star_forming/random_orientation/'
 sf_sats_dir = basic_dir + 'satellites/'+model+'_'+snap+'/'+wind+'/star_forming/random_orientation/'
-results_dir = '/home/sapple/simba_sizes/profiles/plotting/'
+results_dir = '/home/sapple/simba_sizes/profiles/plotting/plots/'
 
 bin_labels_centrals = [r'$10.0 < \textrm{log} (M_* / M_{\odot}) < 10.5$', r'$10.5 < \textrm{log} (M_* / M_{\odot}) < 11.0$', r'$ \textrm{log} (M_* / M_{\odot}) > 11.0$']
 bin_labels_sats = [r'$10.0 < \textrm{log} (M_* / M_{\odot}) < 10.5$', r'$\textrm{log} (M_* / M_{\odot}) > 10.5$']

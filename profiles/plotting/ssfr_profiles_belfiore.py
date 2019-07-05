@@ -18,7 +18,7 @@ sf_dir = '/home/sapple/simba_sizes/profiles/ssfr/extended_profiles/centrals/'+mo
 #old:
 #gv_dir = '/home/sapple/simba_sizes/profiles/ssfr/inner_galaxy/m100n1024_145/green_valley/random_orientation/bh_centered/'
 #sf_dir = '/home/sapple/simba_sizes/profiles/ssfr/inner_galaxy/m100n1024_145/star_forming/random_orientation/bh_centered/'
-results_dir = '/home/sapple/simba_sizes/profiles/plotting/'
+results_dir = '/home/sapple/simba_sizes/profiles/plotting/plots/'
 
 masks = [2, 3, 4]
 bin_labels = [r'$10.0 - 10.5$', r'$10.5 - 11.0$', r'$> 11.0$']
