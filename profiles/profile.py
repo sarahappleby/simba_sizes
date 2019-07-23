@@ -18,7 +18,7 @@ age_min = 0.
 age_max = 150.
 mass_loss = 1.18
 time = (age_max - age_min) * 1.e6
-rotate_galaxies = False
+rotate_galaxies = True
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
 factor = 5.
@@ -30,41 +30,47 @@ rplot = np.arange(0., dr*n, dr) + (dr*0.5)
 mass_bins = [9., 9.5, 10., 10.5, 11.]
 bin_labels = ['9.0 - 9.5', '9.5 - 10.0', '10.0 - 10.5', '10.5 - 11.0', '> 11.0']
 mass_bins = [10., 10.5, 11.]
-bin_labels = ['10.0 - 10.5', '10.5 - 11.0','> 11.0']
+bin_labels = ['10.0 - 10.5', '10.5 - 11.0', '> 11.0']
 
 masks = [2, 3, 4]
 
 model = sys.argv[1]
 wind = sys.argv[2]
 snap = sys.argv[3]
-sample_file = sys.argv[4]
-results_dir = sys.argv[5]
+results_dir = sys.argv[4]
+if len(sys.argv) > 5:
+    sample_file = sys.argv[5]
 
-if 'gv' in sample_file.split('/', -1)[-1]:
-    selection = 'green_valley'
-elif 'sf' in sample_file.split('/', -1)[-1]:
-    selection = 'star_forming'
+    if 'gv' in sample_file.split('/', -1)[-1]:
+        selection = 'green_valley'
+    elif 'sf' in sample_file.split('/', -1)[-1]:
+        selection = 'star_forming'
+
+    results_dir += '/'+model + '_' + snap + '/' + wind + '/' + selection
+
+    with h5py.File(sample_file, 'r') as f:
+        try:
+                gal_ids = f[model+'_'+snap].value
+        except KeyError:
+                print 'Need to identify galaxies; run gv_sample.py first'
+
+else:
+    sample_file = None
+    results_dir += '/'+model + '_' + snap + '/' + wind + '/'
 
 if 'satellites' in results_dir:
     centrals = False
 else:
     centrals = True
 
-results_dir += '/'+model + '_' + snap + '/' + wind + '/' + selection
 if rotate_galaxies:
         results_dir += '/rotated_faceon'
 else:
         results_dir += '/random_orientation'
 if not os.path.exists(results_dir):
         os.makedirs(results_dir)
-        os.makedirs(results_dir+'/images')
-        os.makedirs(results_dir+'/profiles')
-
-with h5py.File(sample_file, 'r') as f:
-        try:
-                gal_ids = f[model+'_'+snap].value
-        except KeyError:
-                print 'Need to identify galaxies; run gv_sample.py first'
+        #os.makedirs(results_dir+'/images')
+        #os.makedirs(results_dir+'/profiles')
 
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 if wind == 's50j7k':
@@ -95,6 +101,9 @@ with h5py.File(halflight_file, 'r') as f:
     gal_rad = f[model+'_'+wind+'_'+snap+'_halflight'][:] # these are in pkpc
 gal_rad = np.sum(gal_rad, axis=0) / 3.
 #gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
+
+if not sample_file:
+    gal_ids = np.ones(len(sim.galaxies))
 
 gal_sm = np.log10(gal_sm[gal_ids*gal_cent])
 gal_ssfr = np.log10(gal_ssfr[gal_ids*gal_cent])
@@ -177,50 +186,50 @@ for j, m in enumerate(masks):
 
                 r = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
 
-                plot_name = results_dir + '/images/gal_'+str(gal_ids_use[i]) + '_stars.png'
-                make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
+                #plot_name = results_dir + '/images/gal_'+str(gal_ids_use[i]) + '_stars.png'
+                #make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
 
                 use_star_m[i] = make_profile(n, dr, r, mass, rhalf)
                 use_star_ages[i] = make_profile(n, dr, r, ages*mass, rhalf)
                 use_star_ages[i] /= use_star_m[i]
                 
-                """
-                For the gas particles:
-                """
-                pos = gas_pos[glist]
-                mass = gas_mass[glist]
-                sfr = gas_sfr[glist]
-                h1 = gas_h1[glist]
-                h2 = gas_h2[glist]
-                temp = gas_temp[glist]
+                if len(glist) > 0.:
+                        """
+                        For the gas particles:
+                        """
+                        pos = gas_pos[glist]
+                        mass = gas_mass[glist]
+                        sfr = gas_sfr[glist]
+                        h1 = gas_h1[glist]
+                        h2 = gas_h2[glist]
+                        temp = gas_temp[glist]
         
-                if len(sim.galaxies[gal_ids_use[i]].bhlist) > 0.:
-                        pos -= bh_pos[sim.galaxies[gal_ids_use[i]].bhlist[0]]
-                else:
-                        s_pos = star_pos[slist]
-                        s_mass = star_mass[slist]
-                        pos -= center_of_quantity(s_pos, s_mass)
-                        print 'No black holes to center on, centering on stars'
+                        if len(sim.galaxies[gal_ids_use[i]].bhlist) > 0.:
+                                pos -= bh_pos[sim.galaxies[gal_ids_use[i]].bhlist[0]]
+                        else:
+                                s_pos = star_pos[slist]
+                                s_mass = star_mass[slist]
+                                pos -= center_of_quantity(s_pos, s_mass)
+                                print 'No black holes to center on, centering on stars'
 
-                if rotate_galaxies:
-                        pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
+                        if rotate_galaxies:
+                                pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
 
-                r  = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
+                        r  = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
 
-                plot_name = results_dir + '/images/gal_'+str(gal_ids_use[i]) + '_gas.png'
-                make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
+                        #plot_name = results_dir + '/images/gal_'+str(gal_ids_use[i]) + '_gas.png'
+                        #make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
 
-                use_gas_m[i] = make_profile(n, dr, r, mass, rhalf)
-                use_gas_sfr[i] = make_profile(n, dr, r, sfr, rhalf)
-                use_gas_h1[i] = make_profile(n, dr, r, h1, rhalf)
-                use_gas_h2[i] = make_profile(n, dr, r, h2, rhalf)
-                use_gas_temp[i] = make_profile(n, dr, r, temp*mass, rhalf)
-                use_gas_temp[i] /= use_gas_m[i]
+                        use_gas_m[i] = make_profile(n, dr, r, mass, rhalf)
+                        use_gas_sfr[i] = make_profile(n, dr, r, sfr, rhalf)
+                        use_gas_h1[i] = make_profile(n, dr, r, h1, rhalf)
+                        use_gas_h2[i] = make_profile(n, dr, r, h2, rhalf)
+                        use_gas_temp[i] = make_profile(n, dr, r, temp*mass, rhalf)
+                        use_gas_temp[i] /= use_gas_m[i]
 
-
-                plot_profile(rplot, use_gas_sfr[i], results_dir+'/profiles/gas_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
-                plot_profile(rplot, use_gas_h1[i], results_dir+'/profiles/gas_h1_profile_gal_'+str(gal_ids_use[i])+'.png', 'HI fraction surface density', title=title)
-                plot_profile(rplot, use_gas_h2[i], results_dir+'/profiles/gas_h2_profile_gal_'+str(gal_ids_use[i])+'.png', 'HII fraction surface density', title=title)
+                        #plot_profile(rplot, use_gas_sfr[i], results_dir+'/profiles/gas_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
+                        #plot_profile(rplot, use_gas_h1[i], results_dir+'/profiles/gas_h1_profile_gal_'+str(gal_ids_use[i])+'.png', 'HI fraction surface density', title=title)
+                        #plot_profile(rplot, use_gas_h2[i], results_dir+'/profiles/gas_h2_profile_gal_'+str(gal_ids_use[i])+'.png', 'HII fraction surface density', title=title)
 
         with h5py.File(results_dir+'/mask_'+str(m)+'_all_profiles.h5', 'a') as f:
                 f.create_dataset('gas_sfr', data=np.array(use_gas_sfr))
