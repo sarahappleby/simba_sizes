@@ -50,7 +50,7 @@ if len(sys.argv) > 5:
 
     with h5py.File(sample_file, 'r') as f:
         try:
-                gal_ids = f[model+'_'+snap].value
+                gals = f[model+'_'+snap].value
         except KeyError:
                 print 'Need to identify galaxies; run gv_sample.py first'
 
@@ -102,8 +102,10 @@ with h5py.File(halflight_file, 'r') as f:
 gal_rad = np.sum(gal_rad, axis=0) / 3.
 #gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
 
-if not sample_file:
-    gal_ids = np.ones(len(sim.galaxies))
+gal_ids = np.array([True for i in range(len(sim.galaxies))])
+if sample_file:
+    gal_ids = np.array([False for i in range(len(sim.galaxies))])
+    gal_ids[gals] = True 
 
 gal_sm = np.log10(gal_sm[gal_ids*gal_cent])
 gal_ssfr = np.log10(gal_ssfr[gal_ids*gal_cent])
@@ -150,6 +152,8 @@ for j, m in enumerate(masks):
         use_gas_sfr = np.zeros((len(gal_ids_use), n))
         use_gas_h1 = np.zeros((len(gal_ids_use), n))
         use_gas_h2 = np.zeros((len(gal_ids_use), n))
+        use_gas_h1_m = np.zeros((len(gal_ids_use), n))
+        use_gas_h2_m = np.zeros((len(gal_ids_use), n))
         use_gas_temp = np.zeros((len(gal_ids_use), n))
 
         for i in range(len(gal_ids_use)):
@@ -226,6 +230,9 @@ for j, m in enumerate(masks):
                         use_gas_h2[i] = make_profile(n, dr, r, h2, rhalf)
                         use_gas_temp[i] = make_profile(n, dr, r, temp*mass, rhalf)
                         use_gas_temp[i] /= use_gas_m[i]
+                        use_gas_h1_m[i] = make_profile(n, dr, r, h1*mass, rhalf)
+                        use_gas_h2_m[i] = make_profile(n, dr, r, h2*mass, rhalf)
+                        
 
                         #plot_profile(rplot, use_gas_sfr[i], results_dir+'/profiles/gas_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
                         #plot_profile(rplot, use_gas_h1[i], results_dir+'/profiles/gas_h1_profile_gal_'+str(gal_ids_use[i])+'.png', 'HI fraction surface density', title=title)
@@ -239,6 +246,8 @@ for j, m in enumerate(masks):
                 f.create_dataset('sm', data=np.array(use_star_m))
                 f.create_dataset('ages', data=np.array(use_star_ages))
                 f.create_dataset('temp', data=np.array(use_gas_temp))
+                f.create_dataset('h1_m', data=np.array(use_gas_h1_m))
+                f.create_dataset('h2_m', data=np.array(use_gas_h2_m))
                 f.create_dataset('gal_ids', data=np.array(gal_ids_use))
 
         del use_star_m, use_gas_sfr, use_gas_h1, use_gas_h2, use_gas_m, use_star_ages, gal_ids_use
