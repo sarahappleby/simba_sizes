@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib import cm
 from plotting_methods import plot_belfiore
 import sys
 
@@ -9,7 +10,10 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rcParams.update({'font.size': 12})
 
-colors = ['b', 'c', 'm']
+cmap = cm.get_cmap('viridis')
+colors = [cmap(0.85), cmap(0.6), cmap(0.35), cmap(0.15)]
+
+plot_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/plots/'
 selection = 'sf'
 
 data_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
@@ -22,7 +26,7 @@ xlabel = r'$ R / R_{half}$'
 
 lines = []
 for c in colors:
-    lines.append(Line2D([0,1],[0,1],linestyle=':', color=c))
+    lines.append(Line2D([0,1],[0,1],linestyle='-', color=c))
 
 line_cen = Line2D([0,1],[0,1],linestyle=':', color='k')
 line_sat = Line2D([0,1],[0,1],linestyle='--', color='k')
@@ -102,6 +106,6 @@ ax[1].set_xlabel(xlabel)
 ax[1].set_ylabel(r'$\textrm{log} (\Sigma_{HI} / M_{\odot}\textrm{kpc}^{-2})$')
 
 
-
+plt.savefig(plot_dir+'sf_sats_cents.png')
 plt.show()
-
+plt.clf()

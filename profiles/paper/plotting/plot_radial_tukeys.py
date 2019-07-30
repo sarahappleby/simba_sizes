@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from plotting_methods import plot_belfiore
 import sys
 
@@ -8,9 +9,14 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rcParams.update({'font.size': 12})
 
-colors = ['g', 'c', 'b', 'm', 'r']
+cmap = cm.get_cmap('magma')
+colors_b18 = [cmap(0.9), cmap(0.65), cmap(0.5), cmap(0.3)]
+
+cmap = cm.get_cmap('viridis')
+colors = [cmap(0.85), cmap(0.6), cmap(0.35), cmap(0.15)]
+
+#colors = ['g', 'c', 'b', 'm']
 selection = 'sf'
-colors_b18 = ['lightgreen', 'c', 'deepskyblue', 'magenta']
 mass_b18 = [9.5, 10.0,  10.5, 11., 11.5]
 
 data_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
@@ -22,7 +28,7 @@ plot_labels = [r'$9.5 < \textrm{log} (M_* / M_{\odot}) < 10.0$',
                 r'$ \textrm{log} (M_* / M_{\odot}) > 11.0$']
 xlabel = r'$ R / R_{half}$'
 
-fig, ax = plt.subplots(2, 2, figsize=(20, 20))
+fig, ax = plt.subplots(2, 2, figsize=(15, 15))
 ax = ax.flatten()
 
 # plot SFR:
@@ -39,7 +45,7 @@ for i, b in enumerate(bin_labels):
         bins = np.arange(0., factor, dr)
         rplot = bins+(dr*0.5)
 
-    ax[0].plot(rplot, tukey, color=colors[i], marker='.', markersize=4, linestyle='-', label=plot_labels[i]+'; '+str(int(no_gals))+' galaxies')
+    ax[0].plot(rplot, tukey, color=colors[i], marker='.', markersize=5, linestyle='-', label=plot_labels[i]+'; '+str(int(no_gals))+' galaxies')
     if i == 1:
         ax[0].fill_between(rplot, tukey - large, tukey + large, color=colors[i], alpha=0.1)
     ax[0].fill_between(rplot, tukey - small, tukey + small, color=colors[i], alpha=0.3)
@@ -50,6 +56,7 @@ ax[0].set_xlabel(xlabel)
 ax[0].set_ylabel(r'$ \textrm{log} (\Sigma_{\textrm{SFR}} / M_{\odot}\textrm{yr}^{-1} \textrm{kpc}^{-2})$')
 ax[0].legend()
 
+plot_belfiore(ax[1], 'sf', colors_b18, mass_b18=mass_b18, label=True)
 # plot sSFR:
 for i, b in enumerate(bin_labels):
     with h5py.File(data_dir+'sf_ssfr_data.h5') as f:
@@ -64,12 +71,11 @@ for i, b in enumerate(bin_labels):
         bins = np.arange(0., factor, dr)
         rplot = bins+(dr*0.5)
 
-    ax[1].plot(rplot, tukey, color=colors[i], marker='.', markersize=4, linestyle='-')
+    ax[1].plot(rplot, tukey, color=colors[i], marker='.', markersize=5, linestyle='-')
     if i == 1:
         ax[1].fill_between(rplot, tukey - large, tukey + large, color=colors[i], alpha=0.1)
     ax[1].fill_between(rplot, tukey - small, tukey + small, color=colors[i], alpha=0.3)
 
-#plot_belfiore(ax[1], 'sf', colors_b18, mass_b18=mass_b18, label=True)
 ax[1].set_xlim(0, 3.5)
 ax[1].set_ylim(-12.5, -9.0)
 ax[1].set_xlabel(xlabel)
@@ -90,7 +96,7 @@ for i, b in enumerate(bin_labels):
         bins = np.arange(0., factor, dr)
         rplot = bins+(dr*0.5)
 
-    ax[2].plot(rplot, tukey, color=colors[i], marker='.', markersize=4, linestyle='-')
+    ax[2].plot(rplot, tukey, color=colors[i], marker='.', markersize=5, linestyle='-')
     if i == 1:
         ax[2].fill_between(rplot, tukey - large, tukey + large, color=colors[i], alpha=0.1)
     ax[2].fill_between(rplot, tukey - small, tukey + small, color=colors[i], alpha=0.3)
@@ -113,7 +119,7 @@ for i, b in enumerate(bin_labels):
         bins = np.arange(0., factor, dr)
         rplot = bins+(dr*0.5)
 
-    ax[3].plot(rplot, tukey, color=colors[i], marker='.', markersize=4, linestyle='-')
+    ax[3].plot(rplot, tukey, color=colors[i], marker='.', markersize=5, linestyle='-')
     if i == 1:
         ax[3].fill_between(rplot, tukey - large, tukey + large, color=colors[i], alpha=0.1)
     ax[3].fill_between(rplot, tukey - small, tukey + small, color=colors[i], alpha=0.3)
