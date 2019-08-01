@@ -7,7 +7,8 @@ import os
 import matplotlib.colors as colors
 
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+plt.rc('font', family='serif', )
+plt.rcParams.update({'font.size': 14})
 
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
 	new_cmap = colors.LinearSegmentedColormap.from_list(                                                                                                                             
@@ -77,7 +78,7 @@ ssfr_mask = (gal_ssfr > gv_ssfr_min)
 sf_mask = [sf_check(gal_sm[i], gal_sfr[i], b1) for i in range(len(sim.galaxies))]
 gv_mask = [gv_check(gal_sm[i], gal_sfr[i], b1, b2) for i in range(len(sim.galaxies))]
 
-sm_plot = np.arange(9.0, 12., 0.5)
+sm_plot = np.arange(9.0, 13., 0.5)
 belfiore_main = sfms_line(sm_plot, a=0.73, b=-7.7)
 if selection == '1' or selection == '2':
 	belfiore_lower = sfms_line(sm_plot, a=0.73, b=b2)
@@ -100,11 +101,11 @@ plt.axvline(10., ls='--', lw=1.5, c='k')
 plt.axvline(10.5, ls='--', lw=1.5, c='k')
 plt.axvline(11., ls='--', lw=1.5, c='k')
 plt.scatter(gal_sm, gal_sfr, s=1, c=gal_ssfr, cmap=new_cmap)
-plt.xlim(9., 11.5)
+plt.xlim(9.5,12.5)
 plt.ylim(-3.5, )
 plt.clim(-12, -9)
 plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
-plt.legend()
+plt.legend(fontsize=12)
 plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
 plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
 plt.savefig(plots_dir+'b18_sample_all_colormap.png')
@@ -170,7 +171,7 @@ plt.scatter(gal_sm[gv_mask], gal_sfr[gv_mask], s=1, c='g', label='Green Valley')
 plt.scatter(gal_sm[sf_mask], gal_sfr[sf_mask], s=1, c='b', label='SFMS')
 plt.xlim(9., 11.5)
 plt.ylim(-3.5, )
-plt.legend()
+plt.legend(fontsize=12)
 plt.xlabel('log M*')
 plt.ylabel('log SFR')
 plt.savefig(plots_dir+'b18_sample_all.png')

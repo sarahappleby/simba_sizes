@@ -8,7 +8,7 @@ import sys
 
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
-plt.rcParams.update({'font.size': 12})
+plt.rcParams.update({'font.size': 14})
 
 cmap = cm.get_cmap('viridis')
 colors = [cmap(0.85), cmap(0.6), cmap(0.35), cmap(0.15)]
@@ -34,12 +34,12 @@ line_sat = Line2D([0,1],[0,1],linestyle='--', color='k')
 fig, ax = plt.subplots(1, 2, figsize=(12, 5))
 ax = ax.flatten()
 
-leg1 = ax[0].legend(lines, plot_labels, loc=1)
-leg2 = ax[0].legend([line_cen, line_sat],['centrals', 'satellites'], loc=3)
+leg1 = ax[0].legend(lines, plot_labels, loc=1, fontsize=12)
+leg2 = ax[0].legend([line_cen, line_sat],['centrals', 'satellites'], loc=3, fontsize=12)
 ax[0].add_artist(leg1)
 
-leg1 = ax[1].legend(lines, plot_labels, loc=1)
-leg2 = ax[1].legend([line_cen, line_sat],['centrals', 'satellites'], loc=3)
+leg1 = ax[1].legend(lines, plot_labels, loc=1, fontsize=12)
+leg2 = ax[1].legend([line_cen, line_sat],['centrals', 'satellites'], loc=3, fontsize=12)
 ax[1].add_artist(leg1)
 
 # plot sSFR:

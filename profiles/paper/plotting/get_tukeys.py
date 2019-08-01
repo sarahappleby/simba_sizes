@@ -33,11 +33,12 @@ for i, m in enumerate(masks):
         cen_gas_h1 = f['h1_m'].value
         cen_gas_h2 = f['h2_m'].value
 
-    with h5py.File(sats_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
-        sat_star_m = f['sm'].value
-        sat_gas_sfr = f['gas_sfr'].value
-        sat_gas_h1 = f['h1_m'].value
-        sat_gas_h2 = f['h2_m'].value
+    if gals == 'all':
+        with h5py.File(sats_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
+            sat_star_m = f['sm'].value
+            sat_gas_sfr = f['gas_sfr'].value
+            sat_gas_h1 = f['h1_m'].value
+            sat_gas_h2 = f['h2_m'].value
         
 
     if i == 0:
@@ -83,7 +84,8 @@ for i, m in enumerate(masks):
     tukey[np.where(tukey == 0.)[0]] = 1.e-6
     cen_fmol_tukey[i] = np.log10(tukey)
     cen_fmol_large_scale[i] = scale / (np.log(10.)*tukey)
-    cen_fmol_small_scale[i] = (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
+    cen_fmol_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
+
 
     if gals == 'all':
         # satellites:

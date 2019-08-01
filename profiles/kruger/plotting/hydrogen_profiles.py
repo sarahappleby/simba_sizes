@@ -24,7 +24,7 @@ results_dir = '/home/sapple/simba_sizes/profiles/plotting/plots/'
 
 xlim = [0., 5.]
 ylim = None
-xlabel = r'$R_{half}$'
+xlabel = r'$ R / R_{half}$'
 
 # h1:
 
@@ -36,7 +36,7 @@ plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim, savefile)
 filename = 'h1_mass_data.h5'
 ylabel = r'$ \textrm{log} (\Sigma_{HI} / M_{\odot}\textrm{kpc}^{-2})$'
 savefile = results_dir+'h1_mass_'+wind+'.png'
-plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim, savefile)
+plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim, savefile, h1_coldens=True)
 
 filename = 'h1_mass_sm_data.h5'
 ylabel = r'$\textrm{log} (M_{HI} / M_*)$'
@@ -53,7 +53,7 @@ plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim, savefile)
 filename = 'h2_mass_data.h5'
 ylabel = r'$\textrm{log} (\Sigma_{H_2} / M_{\odot}\textrm{kpc}^{-2})$'
 savefile = results_dir+'h2_mass_'+wind+'.png'
-plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim, savefile)
+plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim, savefile, h2_coldens=True)
 
 filename = 'h2_mass_sm_data.h5'
 ylabel = r'$\textrm{log} (M_{H_2} / M_*)$'

@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.io import ascii
 import matplotlib.pyplot as plt 
+import matplotlib.cm as cm
 import h5py
 
 def tukey_biweight(x, c=5.0, epsilon=1.e-11):
@@ -18,7 +19,7 @@ def tukey_biweight(x, c=5.0, epsilon=1.e-11):
     t = 1.96 # 97.5% of t distribution with df = max(0.7(n-1), 1)
     return tukey, scale
 
-def plot_belfiore(ax, sample, colors, mass_b18=[9.0,  9.5, 10.0,  10.5, 11., 11.5]):
+def plot_belfiore(ax, sample, colors, mass_b18=[9.0,  9.5, 10.0,  10.5, 11., 11.5], label=False):
     if sample == 'sf':
         aa = ascii.read('b18_ssfr_gradients_main_sequence.dat')
     if sample == 'gv':
@@ -32,9 +33,11 @@ def plot_belfiore(ax, sample, colors, mass_b18=[9.0,  9.5, 10.0,  10.5, 11., 11.
         y2=np.array(aa['{:.2f}'.format(mass_b18[nn])+'-'+'{:.2f}'.format(mass_b18[nn+1])+' sSFR']-\
             aa['{:.2f}'.format(mass_b18[nn])+'-'+'{:.2f}'.format(mass_b18[nn+1])+' error sSFR'])
 
-        #ax.plot(x,y , color=colors[nn], lw=2., label ='{:.1f}'.format(mass_b18[nn])+'-'+'{:.1f}'.format(mass_b18[nn+1]))
-        ax.plot(x,y , color=colors[nn], lw=1.5)
-        ax.fill_between(x, y1, y2, where=y1 >= y2, facecolor=colors[nn], alpha=0.2, edgecolor='none')
+        if not label:
+            ax.plot(x,y , color=colors[nn], lw=1.5)
+        elif label:
+            ax.plot(x,y , color=colors[nn], lw=1.5, label=r'$\textbf{B18};\ $'+ '{:.1f}'.format(mass_b18[nn])+r'$\ < \textrm{log} (M_* / M_{\odot}) <\ $'+'{:.1f}'.format(mass_b18[nn+1]))
+        ax.fill_between(x, y1, y2, where=y1 >= y2, facecolor=colors[nn], alpha=0.3, edgecolor='none')
 
 def get_labels(bins):
     text = '\\textrm{log} (M_* / M_{\\odot})'
@@ -49,7 +52,7 @@ def get_labels(bins):
             h5py_labels.append('>'+str(bins[i]))
     return plot_labels, h5py_labels
 
-def plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim=None, savefile='plot.png'):
+def plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim=None, savefile='plot.png', h1_coldens=False, h2_coldens=False):
 
     bin_centrals = [10.0, 10.5, 11.0]
     bin_sats = [10.0, 10.5]
@@ -58,7 +61,7 @@ def plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim=None, savefile='plo
     colors = ['b', 'm', 'r']
     mass_b18=[10.0,  10.5, 11.0, 11.5]
 
-    fig, ax = plt.subplots(2, 2, figsize=(15, 15))
+    fig, ax = plt.subplots(2, 2, figsize=(17, 15))
     axes = ax.flatten()
 
     for i in range(len(axes)):
@@ -97,10 +100,30 @@ def plot_all(data_dirs, filename, xlabel, ylabel, xlim, ylim=None, savefile='plo
         axes[i].set_xlabel(xlabel, fontsize=16)
         axes[i].set_ylabel(ylabel, fontsize=16)
         axes[i].legend()
+
+        if h1_coldens:
+            lower = 3.
+            higher = 9.0
+            axes[i].set_ylim(lower, higher)
+            axes[i].axhline(6., linestyle='--', c='k')
+            ax2 = axes[i].twinx()
+            convert = 1.24e14
+            ax2.set_ylim(np.log10(convert*(10**lower)), np.log10(convert*(10**higher)))
+            ax2.set_ylabel(r'$ \textrm{log} (N_{HI} / cm^{-2})$')
+        elif h2_coldens:
+            lower = 3.
+            higher = 9.0
+            axes[i].set_ylim(lower, higher)
+            ax2 = axes[i].twinx()
+            convert = 1.24e14
+            ax2.set_ylim(np.log10(convert*(10**lower)), np.log10(convert*(10**higher)))
+            ax2.set_ylabel(r'$ \textrm{log} (N_{H_{2}} / cm^{-2})$')
         
     if 'ssfr' in filename:
-        plot_belfiore(ax[0][0], 'sf', colors, mass_b18=mass_b18)
-        plot_belfiore(ax[0][1], 'gv', colors, mass_b18=mass_b18)
+        cmap = cm.get_cmap('viridis') 
+        colors_b18 = [cmap(0.3), cmap(0.6), cmap(0.9)]
+        plot_belfiore(ax[0][0], 'sf', colors_b18, mass_b18=mass_b18)
+        plot_belfiore(ax[0][1], 'gv', colors_b18, mass_b18=mass_b18)
 
     plt.savefig(savefile)
     plt.clf()

@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import sys
 from plotting_methods import *
 
@@ -22,8 +23,10 @@ results_dir = '/home/sapple/simba_sizes/profiles/plotting/plots/'
 
 masks = [2, 3, 4]
 bin_labels = [r'$10.0 - 10.5$', r'$10.5 - 11.0$', r'$> 11.0$']
+bin_labels = [r'$10.0 < \textrm{log} (M_* / M_{\odot}) < 10.5$', r'$10.5 < \textrm{log} (M_* / M_{\odot}) < 11.0$', r'$ \textrm{log} (M_* / M_{\odot}) > 11.0$']
 colors = ['b', 'm', 'r']
-mass_c=[10.0,  10.5, 11., 11.5]
+colors_b18 = ['deepskyblue', 'magenta', 'darkorange']
+mass_b18=[10.0,  10.5, 11., 11.5]
 
 fig, ax = plt.subplots(1, 2, figsize=(15, 6))
 
@@ -49,13 +52,13 @@ for i, m in enumerate(masks):
     gas_ssfr_large_scale[i] = scale / (np.log(10.)*tukey)
     gas_ssfr_small_scale[i] = scale / (np.sqrt(no_gals[i])* np.log(10.)*tukey)
 
-plot_belfiore(ax[0], 'sf', colors, mass_c=mass_c)
+plot_belfiore(ax[0], 'sf', colors_b18, mass_b18=mass_b18, label=True)
 for m in range(len(bin_labels)):
-    ax[0].plot(bins+(dr*0.5), gas_ssfr_tukey[m], color=colors[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
+    ax[0].plot(bins+(dr*0.5), gas_ssfr_tukey[m], color=colors[m], linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
     if m == 0:
-        ax[0].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], color=colors[m], alpha=0.1)
-    ax[0].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], color=colors[m], alpha=0.3)
-ax[0].set_xlabel(r'$R_{half}$', fontsize=16)
+        ax[0].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], color=colors[m], alpha=0.1, edgecolor='face')
+    ax[0].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], color=colors[m], alpha=0.4, edgecolor='face')
+ax[0].set_xlabel(r'$R / R_{half}$', fontsize=16)
 ax[0].set_ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$', fontsize=16)
 ax[0].set_xlim(0, 1.5)
 ax[0].set_ylim(-12.5, -9.)
@@ -83,13 +86,13 @@ for i, m in enumerate(masks):
     gas_ssfr_large_scale[i] = scale / (np.log(10.)*tukey)
     gas_ssfr_small_scale[i] = scale / (np.sqrt(no_gals[i])* np.log(10.)*tukey)
 
-plot_belfiore(ax[1], 'gv', colors, mass_c=mass_c)
+plot_belfiore(ax[1], 'gv', colors_b18, mass_b18=mass_b18)
 for m in range(len(bin_labels)):
-    ax[1].plot(bins+(dr*0.5), gas_ssfr_tukey[m], color=colors[m], marker='.', markersize=4, linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
+    ax[1].plot(bins+(dr*0.5), gas_ssfr_tukey[m], color=colors[m], linestyle='--', label=bin_labels[m] +', '+str(int(no_gals[m]))+' galaxies')
     if m == 0:
-        ax[1].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], color=colors[m], alpha=0.1)
-    ax[1].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], color=colors[m], alpha=0.3)
-ax[1].set_xlabel(r'$R_{half}$', fontsize=16)
+        ax[1].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_large_scale[m], gas_ssfr_tukey[m] + gas_ssfr_large_scale[m], color=colors[m], alpha=0.1, edgecolor='face')
+    ax[1].fill_between(bins+(dr*0.5), gas_ssfr_tukey[m] - gas_ssfr_small_scale[m], gas_ssfr_tukey[m] + gas_ssfr_small_scale[m], color=colors[m], alpha=0.4, edgecolor='face')
+ax[1].set_xlabel(r'$R / R_{half}$', fontsize=16)
 ax[1].set_ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$', fontsize=16)
 ax[1].set_xlim(0, 1.5)
 ax[1].set_ylim(-12.5, -9.)

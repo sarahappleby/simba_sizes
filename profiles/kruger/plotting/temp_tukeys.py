@@ -26,14 +26,14 @@ for i, m in enumerate(masks):
             temp = f['temp'].value
         if satellites & (m == 3):
             with h5py.File(profile_dir+'mask_'+str(m+1)+'_gas_temp.h5', 'r') as f:
-                ages = np.concatenate((temp, f['temp'].value))
+                temp = np.concatenate((temp, f['temp'].value))
 
     except KeyError:
         with h5py.File(profile_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
             temp = f['temp'].value
         if satellites & (m == 3):
             with h5py.File(profile_dir+'mask_'+str(m+1)+'_all_profiles.h5', 'r') as f:
-                ages = np.concatenate((temp, f['temp'].value))
+                temp = np.concatenate((temp, f['temp'].value))
     
     if i == 0:
         n = temp.shape[1]
