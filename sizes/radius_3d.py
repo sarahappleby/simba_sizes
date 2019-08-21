@@ -11,26 +11,23 @@ from astropy.cosmology import FlatLambdaCDM
 
 plotvar = 'mstar'
 plotvar = 'R'  # options are 'bolometric', 'U', 'B', 'V', 'R', and 'K'
+frac = 0.5
 
 # define input file
-MODEL = 'm50n512'
+MODEL = 'm100n1024'
 WIND = ['s50j7k', ]
 
 snaps = ['151', '125', '105', '090', '078', '062']
 snaps = ['151']
-save_file = '/home/sapple/simba_sizes/sizes/data/halfradius_agn_R.h5'
-#plot_dir = '/home/sapple/simba_sizes/sizes/plots/'
+save_file = '/home/sapple/simba_sizes/sizes/data/halfradius_3d_R.h5'
 
 def center_of_weight(pos, weight):
         if len(pos.shape) == 2:
                 weight =  np.transpose(np.array([weight,]*len(pos[0])))
         return np.sum(pos*weight, axis=0) / np.sum(weight, axis=0)
 
-def compute_3d_rfrac(mass,pos, cent=None, frac=0.5):
+def compute_3d_rfrac(mass,pos,frac=0.5):
     mtot = np.sum(mass)
-    if not cent:
-        cent = center_of_weight(pos, mass)
-    pos -= cent
     r2 = np.sqrt(np.sum(pos**2, axis=1))
     sortindex = np.argsort(r2)
     r2sort = r2[sortindex]
@@ -40,7 +37,7 @@ def compute_3d_rfrac(mass,pos, cent=None, frac=0.5):
             if r2sort[i] > 100*100: rh = mygals[igal].radii['stellar_half_mass']
             else: rh = np.sqrt(r2sort[i])
             break
-    return rh,cent
+    return rh
 
 
 # load in input file
@@ -83,12 +80,14 @@ for SNAP in snaps:
                 mass = np.array([sm[k] for k in mygals[igal].slist])
                 lum = np.array([allL[k] for k in mygals[igal].slist])
                 pos = np.array([sp[k] for k in mygals[igal].slist])
-                cent_bh = bh_pos[mygals[igal].bhlist[0]]
-        
-                rhalfmass[igal],cent = compute_3d_rfrac(mass,pos, cent_bh,frac)
-                rhalf[igal],cent = compute_3d_rfrac(lum,pos, cent_bh_frac)
+                if len(mygals[igal].bhlist) > 0.:
+                    pos -= bh_pos[mygals[igal].bhlist[0]]
+                else:
+                    pos -= center_of_weight(pos, mass)
+                rhalfmass[igal] = compute_3d_rfrac(mass,pos, frac)
+                rhalf[igal] = compute_3d_rfrac(lum,pos, frac)
 
-                if igal%(len(mygals)/20)==0: print('%d logM*= %.3f c= [%.3f,%.3f] rh2d_new= %.2f rh2dMs_new= %.2f rh3d= %.3f'%(igal,np.log10(ms[igal]),cent[0],cent[1],rhalf[][igal],rhalfmass[igal],mygals[igal].radii['stellar_half_mass']))
+                if igal%(len(mygals)/20)==0: print('%d logM*= %.3f rh2d_new= %.2f rh2dMs_new= %.2f rh3d= %.3f'%(igal,np.log10(ms[igal]),rhalf[igal],rhalfmass[igal],mygals[igal].radii['stellar_half_mass']))
         
         with h5py.File(save_file, 'a') as hf:
             hf.create_dataset(MODEL+'_'+WIND[iwind]+'_'+str(SNAP)+'_halflight', data=np.array(rhalf))
