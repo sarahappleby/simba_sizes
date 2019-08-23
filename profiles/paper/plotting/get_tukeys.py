@@ -13,14 +13,16 @@ if selection =='gv':
     name = 'green_valley'
 elif selection == 'sf':
     name = 'star_forming'
+basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/physical_units/'
 basic_dir = '/home/sapple/simba_sizes/profiles/paper/'
 
 centrals_dir = basic_dir + 'centrals/'+model+'_'+snap+'/'+wind+'/'+name+'/random_orientation/'
 sats_dir = basic_dir + 'satellites/'+model+'_'+snap+'/'+wind+'/'+name+'/random_orientation/'
+results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/phys_snap_'+snap+'_'
 results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
 
-masks = [0, 1, 2, 3, 4]
-bin_labels = ['9.0-9.5', '9.5-10.0', '10.0-10.5', '10.5-11.0', '>11.0']
+masks = [2, 3, 4]
+bin_labels = ['10.0-10.5', '10.5-11.0', '>11.0']
 
 cen_no_gals = np.zeros(len(masks))
 sat_no_gals = np.zeros(len(masks))
@@ -140,6 +142,10 @@ for i, m in enumerate(masks):
 
         tukey, scale = tukey_biweight(fmol)
         tukey[np.where(tukey == 0.)[0]] = 1.e-6
+        if (gals == 'all') & (snap == '151'):
+            for j in range(len(scale) -1):
+                if scale[j+1] > 2.*scale[j]:
+                    scale[j+1] = np.median(scale)
         all_fmol_tukey[i] = np.log10(tukey)
         all_fmol_large_scale[i] = scale / (np.log(10.)*tukey)
         all_fmol_small_scale[i] = scale / (np.sqrt(all_no_gals[i])* np.log(10.)*tukey)
