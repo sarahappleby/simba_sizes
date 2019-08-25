@@ -20,7 +20,7 @@ from profile_methods import *
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif', size=16)
 
-dr = 1. # kpc
+dr = 0.5 # kpc
 h1_limit = 1.2e6 # Msun/kpc**2
 Npixels = 512
 n_min = 50
@@ -56,6 +56,7 @@ richness = np.log10(gal_h1m / gal_sm)
 mass_mask = np.log10(gal_sm) > 9.
 n_mask = np.array([(len(i.glist) > n_min) for i in sim.central_galaxies])
 mask = mass_mask * n_mask * (gal_h1m > 0.)
+mask = mass_mask * (gal_h1m > 0.)
 gal_ids = np.arange(len(sim.central_galaxies))[mask]
 
 gas_pos = readsnap(snapfile, 'pos', 'gas', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
@@ -67,8 +68,8 @@ bh_pos = readsnap(snapfile, 'pos', 'bndry', suppress=1, units=1) / (h*(1.+redshi
 h1_radii = np.zeros(len(gal_ids))
 
 for i in range(len(gal_ids)):
-    print '\n'
-    print 'Galaxy ' +str(gal_ids[i])
+    print('\n')
+    print('Galaxy ' +str(gal_ids[i]))
 
     rhalf = gal_rad[gal_ids[i]]
     title = 'log M* = ' + str(round(np.log10(gal_sm[gal_ids[i]]), 2)) + '; log(sSFR) = ' + format(round(gal_ssfr[gal_ids[i]], 2)) + '; rhalf = ' + str(round(rhalf, 2)) 
