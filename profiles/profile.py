@@ -27,19 +27,26 @@ n = int(factor / dr)
 rplot = np.arange(0., dr*n, dr) + (dr*0.5)
 
 # for making profiles
-mass_bins = [9., 9.5, 10., 10.5, 11.]
-bin_labels = ['9.0 - 9.5', '9.5 - 10.0', '10.0 - 10.5', '10.5 - 11.0', '> 11.0']
 mass_bins = [10., 10.5, 11.]
 bin_labels = ['10.0 - 10.5', '10.5 - 11.0', '> 11.0']
-
 masks = [2, 3, 4]
 
 model = sys.argv[1]
 wind = sys.argv[2]
 snap = sys.argv[3]
 results_dir = sys.argv[4]
-if len(sys.argv) > 5:
-    sample_file = sys.argv[5]
+
+centrals = sys.argv[5]
+if centrals == 'centrals'
+    centrals = True
+    results_dir += '/centrals/'
+elif centrals == 'satellites'
+    centrals = False
+    results_dir += '/satellites/'
+
+
+if len(sys.argv) > 6:
+    sample_file = sys.argv[6]
 
     if 'gv' in sample_file.split('/', -1)[-1]:
         selection = 'green_valley'
@@ -52,16 +59,11 @@ if len(sys.argv) > 5:
         try:
                 gals = f[model+'_'+snap].value
         except KeyError:
-                print 'Need to identify galaxies; run gv_sample.py first'
+                print 'Need to identify galaxies first'
 
 else:
     sample_file = None
     results_dir += '/'+model + '_' + snap + '/' + wind + '/'
-
-if 'satellites' in results_dir:
-    centrals = False
-else:
-    centrals = True
 
 if rotate_galaxies:
         results_dir += '/rotated_faceon'
