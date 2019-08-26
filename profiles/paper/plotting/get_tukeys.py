@@ -8,18 +8,27 @@ wind = sys.argv[2]
 snap = sys.argv[3]
 selection = sys.argv[4]
 gals = sys.argv[5]
+angle = sys.argv[6]
 
 if selection =='gv':
     name = 'green_valley'
 elif selection == 'sf':
     name = 'star_forming'
-basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/physical_units/'
-basic_dir = '/home/sapple/simba_sizes/profiles/paper/'
+basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/halfradius_units/'
+#basic_dir = '/home/sapple/simba_sizes/profiles/paper/'
 
-centrals_dir = basic_dir + 'centrals/'+model+'_'+snap+'/'+wind+'/'+name+'/random_orientation/'
-sats_dir = basic_dir + 'satellites/'+model+'_'+snap+'/'+wind+'/'+name+'/random_orientation/'
+centrals_dir = basic_dir + 'centrals/'+model+'_'+snap+'/'+wind+'/'+name+'/'+angle+'/'
+sats_dir = basic_dir + 'satellites/'+model+'_'+snap+'/'+wind+'/'+name+'/'+angle+'/'
 results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/phys_snap_'+snap+'_'
 results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
+
+if snap == '151':
+    results_dir += selection
+
+if 'random' in centrals_dir:
+    results_dir += '_rand'
+elif 'rotated' in centrals_dir:
+    results_dir += '_rot'
 
 masks = [2, 3, 4]
 bin_labels = ['10.0-10.5', '10.5-11.0', '>11.0']
@@ -84,6 +93,10 @@ for i, m in enumerate(masks):
     cen_gas_fmol = cen_gas_h2 / cen_gas_h1
     tukey, scale = tukey_biweight(cen_gas_fmol)
     tukey[np.where(tukey == 0.)[0]] = 1.e-6
+    if snap == '151':
+            for j in range(len(scale) -1):
+                if scale[j+1] > 2.*scale[j]:
+                    scale[j+1] = np.median(scale)
     cen_fmol_tukey[i] = np.log10(tukey)
     cen_fmol_large_scale[i] = scale / (np.log(10.)*tukey)
     cen_fmol_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
@@ -142,7 +155,7 @@ for i, m in enumerate(masks):
 
         tukey, scale = tukey_biweight(fmol)
         tukey[np.where(tukey == 0.)[0]] = 1.e-6
-        if (gals == 'all') & (snap == '151'):
+        if snap == '151':
             for j in range(len(scale) -1):
                 if scale[j+1] > 2.*scale[j]:
                     scale[j+1] = np.median(scale)
@@ -151,7 +164,7 @@ for i, m in enumerate(masks):
         all_fmol_small_scale[i] = scale / (np.sqrt(all_no_gals[i])* np.log(10.)*tukey)
 
 
-    with h5py.File(results_dir+selection+'_ssfr_data.h5', 'a') as f:
+    with h5py.File(results_dir+'_ssfr_data.h5', 'a') as f:
         f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
         f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_ssfr_tukey[i]))
         f.create_dataset('cen_large_scale_'+bin_labels[i], data=np.array(cen_ssfr_large_scale[i]))
@@ -166,7 +179,7 @@ for i, m in enumerate(masks):
             f.create_dataset('all_small_scale_'+bin_labels[i], data=np.array(all_ssfr_small_scale[i]))
             f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_ssfr_small_scale[i]))
 
-    with h5py.File(results_dir+selection+'_sfr_data.h5', 'a') as f:
+    with h5py.File(results_dir+'_sfr_data.h5', 'a') as f:
         f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
         f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_sfr_tukey[i]))
         f.create_dataset('cen_large_scale_'+bin_labels[i], data=np.array(cen_sfr_large_scale[i]))
@@ -181,7 +194,7 @@ for i, m in enumerate(masks):
             f.create_dataset('sat_large_scale_'+bin_labels[i], data=np.array(sat_sfr_large_scale[i]))
             f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_sfr_small_scale[i]))
 
-    with h5py.File(results_dir+selection+'_h1_data.h5', 'a') as f:
+    with h5py.File(results_dir+'_h1_data.h5', 'a') as f:
         f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
         f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_h1_tukey[i]))
         f.create_dataset('cen_large_scale_'+bin_labels[i], data=np.array(cen_h1_large_scale[i]))
@@ -196,7 +209,7 @@ for i, m in enumerate(masks):
             f.create_dataset('sat_large_scale_'+bin_labels[i], data=np.array(sat_h1_large_scale[i]))
             f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_h1_small_scale[i]))
         
-    with h5py.File(results_dir+selection+'_fmol_data.h5', 'a') as f:
+    with h5py.File(results_dir+'_fmol_data.h5', 'a') as f:
         f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
         f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_fmol_tukey[i]))
         f.create_dataset('cen_large_scale_'+bin_labels[i], data=np.array(cen_fmol_large_scale[i]))
