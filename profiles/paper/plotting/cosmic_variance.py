@@ -13,12 +13,17 @@ def cosmic_variance(profiles, pos, boxsize, quantity):
     for i in range(8):
         i_using = np.concatenate(np.delete(octant_ids, i))
         tukeys[i], scale = tukey_biweight(profiles[i_using.astype('int')])
-        if quantity == 'sfr':
-            tukeys[i][np.where(tukeys[i] == 0.)[0]] = 1.e-6
-
-    tukeys = np.log10(tukeys)
-    mean_tukey = np.mean(tukeys, axis=0) / len(profiles[0])
+    mean_tukey = np.sum(tukeys, axis=0) / 8
+   
     cosmic_var = variance_jk(tukeys, mean_tukey)
+    cosmic_std = np.sqrt(cosmic_var)
+
+    if quantity == 'sfr':
+        mean_tukey[np.where(mean_tukey == 0.)[0]] = 1.e-6
+    
+    cosmic_std /= (np.log(10.)*mean_tukey)
+    mean_tukey = np.log10(mean_tukey)
+    
     return mean_tukey, cosmic_var
 
 model = sys.argv[1]
