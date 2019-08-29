@@ -24,7 +24,7 @@ def cosmic_variance(profiles, pos, boxsize, quantity):
     cosmic_std /= (np.log(10.)*mean_tukey)
     mean_tukey = np.log10(mean_tukey)
     
-    return mean_tukey, cosmic_var
+    return mean_tukey, cosmic_std
 
 model = sys.argv[1]
 wind = sys.argv[2]
