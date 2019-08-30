@@ -56,7 +56,7 @@ sim =  caesar.load(caesar_dir+model+'_'+snap+'.hdf5', LoadHalo=False)
 gal_pos = np.array([i.pos.in_units('kpc/h') for i in sim.galaxies])
 boxsize = sim.simulation.boxsize.in_units('kpc/h')
 
-
+"""
 for i, m in enumerate(masks):
 
     with h5py.File(centrals_dir+'mask_'+str(m)+'_all_profiles.h5', 'r') as f:
@@ -196,5 +196,113 @@ for i, m in enumerate(masks):
             f.create_dataset('sat_cv_err_'+bin_labels[i], data=np.array(sat_fh2_cv_err[i]))
             f.create_dataset('all_jk_'+bin_labels[i], data=np.array(all_fh2_jk[i]))
             f.create_dataset('all_cv_err_'+bin_labels[i], data=np.array(all_fh2_cv_err[i]))
+"""
+# for gals > 10.5:
+bin_label = '>10.5'
 
+with h5py.File(centrals_dir+'mask_3_all_profiles.h5', 'r') as f:
+    cen_star_m = f['sm'].value
+    cen_gas_sfr = f['gas_sfr'].value
+    cen_gas_h1 = f['h1_m'].value
+    cen_gas_h2 = f['h2_m'].value
+    cen_gal_ids = f['gal_ids'].value
+
+with h5py.File(centrals_dir+'mask_4_all_profiles.h5', 'r') as f:
+    cen_star_m = np.concatenate((cen_star_m, f['sm'].value))
+    cen_gas_sfr = np.concatenate((cen_gas_sfr, f['gas_sfr'].value))
+    cen_gas_h1 = np.concatenate((cen_gas_h1,f['h1_m'].value))
+    cen_gas_h2 = np.concatenate((cen_gas_h2,f['h2_m'].value))
+    cen_gas_ids = np.concatenate((cen_gal_ids,f['gal_ids'].value))
+
+with h5py.File(sats_dir+'mask_3_all_profiles.h5', 'r') as f:
+    sat_star_m = f['sm'].value
+    sat_gas_sfr = f['gas_sfr'].value
+    sat_gas_h1 = f['h1_m'].value
+    sat_gas_h2 = f['h2_m'].value
+    sat_gal_ids = f['gal_ids'].value
+
+with h5py.File(sats_dir+'mask_4_all_profiles.h5', 'r') as f:
+    sat_star_m = np.concatenate((sat_star_m, f['sm'].value))
+    sat_gas_sfr = np.concatenate((sat_gas_sfr, f['gas_sfr'].value))
+    sat_gas_h1 = np.concatenate((sat_gas_h1, f['h1_m'].value))
+    sat_gas_h2 = np.concatenate((sat_gas_h2, f['h2_m'].value))
+    sat_gas_ids = np.concatenate((sat_gal_ids,f['gal_ids'].value))
+
+# centrals:
+cen_no_gals = len(cen_gas_sfr)
+cen_gas_sfe = cen_gas_sfr / cen_gas_h2
+cen_gas_fh2 = cen_gas_h2 / cen_star_m
+cen_gas_ssfr = cen_gas_sfr / cen_star_m
+cen_gas_fmol = cen_gas_h2 / cen_gas_h1
+cen_pos = gal_pos[cen_gal_ids]
+
+cen_ssfr_jk, cen_ssfr_cv_err = cosmic_variance(cen_gas_ssfr, cen_pos, boxsize, 'ssfr')
+cen_sfr_jk, cen_sfr_cv_err = cosmic_variance(cen_gas_sfr, cen_pos, boxsize, 'sfr')
+cen_h1_jk, cen_h1_cv_err = cosmic_variance(cen_gas_h1, cen_pos, boxsize, 'h1')
+cen_fmol_jk, cen_fmol_cv_err = cosmic_variance(cen_gas_fmol, cen_pos, boxsize, 'fmol')
+cen_sfe_jk, cen_sfe_cv_err = cosmic_variance(cen_gas_sfe, cen_pos, boxsize, 'sfe')
+cen_fh2_jk, cen_fh2_cv_err = cosmic_variance(cen_gas_fh2, cen_pos, boxsize, 'fh2')
+
+# satellites:
+sat_no_gals = len(sat_gas_sfr)
+sat_gas_sfe = sat_gas_sfr / sat_gas_h2
+sat_gas_fh2 = sat_gas_h2 / sat_star_m
+sat_gas_ssfr = sat_gas_sfr / sat_star_m
+sat_gas_fmol = sat_gas_h2 / sat_gas_h1
+sat_pos = gal_pos[sat_gal_ids]
+
+sat_ssfr_jk, sat_ssfr_cv_err = cosmic_variance(sat_gas_ssfr, sat_pos, boxsize, 'ssfr')
+sat_sfr_jk, sat_sfr_cv_err = cosmic_variance(sat_gas_sfr, sat_pos, boxsize, 'sfr')
+sat_h1_jk, sat_h1_cv_err = cosmic_variance(sat_gas_h1, sat_pos, boxsize, 'h1')
+sat_fmol_jk, sat_fmol_cv_err = cosmic_variance(sat_gas_fmol, sat_pos, boxsize, 'fmol')
+sat_sfe_jk, sat_sfe_cv_err = cosmic_variance(sat_gas_sfe, sat_pos, boxsize, 'sfe')
+sat_fh2_jk, sat_fh2_cv_err = cosmic_variance(sat_gas_fh2, sat_pos, boxsize, 'fh2')
+
+with h5py.File(results_dir+'_sfr_data.h5', 'a') as f:
+        #f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
+        #f.create_dataset('sat_no_gals_'+bin_label, data=np.array(sat_no_gals))
+        f.create_dataset('cen_jk_'+bin_label, data=np.array(cen_sfr_jk))
+        f.create_dataset('cen_cv_err_'+bin_label, data=np.array(cen_sfr_cv_err))
+        f.create_dataset('sat_jk_'+bin_label, data=np.array(sat_sfr_jk))
+        f.create_dataset('sat_cv_err_'+bin_label, data=np.array(sat_sfr_cv_err))
+
+with h5py.File(results_dir+'_ssfr_data.h5', 'a') as f:
+        #f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
+        #f.create_dataset('sat_no_gals_'+bin_label, data=np.array(sat_no_gals))
+        f.create_dataset('cen_jk_'+bin_label, data=np.array(cen_ssfr_jk))
+        f.create_dataset('cen_cv_err_'+bin_label, data=np.array(cen_ssfr_cv_err))
+        f.create_dataset('sat_jk_'+bin_label, data=np.array(sat_ssfr_jk))
+        f.create_dataset('sat_cv_err_'+bin_label, data=np.array(sat_ssfr_cv_err))
+
+with h5py.File(results_dir+'_h1_data.h5', 'a') as f:
+        #f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
+        #f.create_dataset('sat_no_gals_'+bin_label, data=np.array(sat_no_gals))
+        f.create_dataset('cen_jk_'+bin_label, data=np.array(cen_h1_jk))
+        f.create_dataset('cen_cv_err_'+bin_label, data=np.array(cen_h1_cv_err))
+        f.create_dataset('sat_jk_'+bin_label, data=np.array(sat_h1_jk))
+        f.create_dataset('sat_cv_err_'+bin_label, data=np.array(sat_h1_cv_err))
+
+with h5py.File(results_dir+'_fmol_data.h5', 'a') as f:
+        #f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
+        #f.create_dataset('sat_no_gals_'+bin_label, data=np.array(sat_no_gals))
+        f.create_dataset('cen_jk_'+bin_label, data=np.array(cen_fmol_jk))
+        f.create_dataset('cen_cv_err_'+bin_label, data=np.array(cen_fmol_cv_err))
+        f.create_dataset('sat_jk_'+bin_label, data=np.array(sat_fmol_jk))
+        f.create_dataset('sat_cv_err_'+bin_label, data=np.array(sat_fmol_cv_err))
+
+with h5py.File(results_dir+'_sfe_data.h5', 'a') as f:
+        #f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
+        #f.create_dataset('sat_no_gals_'+bin_label, data=np.array(sat_no_gals))
+        f.create_dataset('cen_jk_'+bin_label, data=np.array(cen_sfe_jk))
+        f.create_dataset('cen_cv_err_'+bin_label, data=np.array(cen_sfe_cv_err))
+        f.create_dataset('sat_jk_'+bin_label, data=np.array(sat_sfe_jk))
+        f.create_dataset('sat_cv_err_'+bin_label, data=np.array(sat_sfe_cv_err))
+
+with h5py.File(results_dir+'_fh2_data.h5', 'a') as f:
+        #f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
+        #f.create_dataset('sat_no_gals_'+bin_label, data=np.array(sat_no_gals))
+        f.create_dataset('cen_jk_'+bin_label, data=np.array(cen_fh2_jk))
+        f.create_dataset('cen_cv_err_'+bin_label, data=np.array(cen_fh2_cv_err))
+        f.create_dataset('sat_jk_'+bin_label, data=np.array(sat_fh2_jk))
+        f.create_dataset('sat_cv_err_'+bin_label, data=np.array(sat_fh2_cv_err))
 
