@@ -58,6 +58,7 @@ for i, m in enumerate(masks):
         cen_ssfr_tukey = np.zeros((len(masks), n)); cen_ssfr_large_scale = np.zeros((len(masks), n)); cen_ssfr_small_scale = np.zeros((len(masks), n))
         cen_sfr_tukey = np.zeros((len(masks), n)); cen_sfr_large_scale = np.zeros((len(masks), n)); cen_sfr_small_scale = np.zeros((len(masks), n))
         cen_h1_tukey = np.zeros((len(masks), n)); cen_h1_large_scale = np.zeros((len(masks), n)); cen_h1_small_scale = np.zeros((len(masks), n))
+        cen_h2_tukey = np.zeros((len(masks), n)); cen_h2_large_scale = np.zeros((len(masks), n)); cen_h2_small_scale = np.zeros((len(masks), n))
         cen_fmol_tukey = np.zeros((len(masks), n)); cen_fmol_large_scale = np.zeros((len(masks), n)); cen_fmol_small_scale = np.zeros((len(masks), n))
         cen_sfe_tukey = np.zeros((len(masks), n)); cen_sfe_large_scale = np.zeros((len(masks), n)); cen_sfe_small_scale = np.zeros((len(masks), n))
         cen_fh2_tukey = np.zeros((len(masks), n)); cen_fh2_large_scale = np.zeros((len(masks), n)); cen_fh2_small_scale = np.zeros((len(masks), n))
@@ -65,6 +66,7 @@ for i, m in enumerate(masks):
         sat_ssfr_tukey = np.zeros((len(masks), n)); sat_ssfr_large_scale = np.zeros((len(masks), n)); sat_ssfr_small_scale = np.zeros((len(masks), n))
         sat_sfr_tukey = np.zeros((len(masks), n)); sat_sfr_large_scale = np.zeros((len(masks), n)); sat_sfr_small_scale = np.zeros((len(masks), n))
         sat_h1_tukey = np.zeros((len(masks), n)); sat_h1_large_scale = np.zeros((len(masks), n)); sat_h1_small_scale = np.zeros((len(masks), n))
+        sat_h2_tukey = np.zeros((len(masks), n)); sat_h2_large_scale = np.zeros((len(masks), n)); sat_h2_small_scale = np.zeros((len(masks), n))
         sat_fmol_tukey = np.zeros((len(masks), n)); sat_fmol_large_scale = np.zeros((len(masks), n)); sat_fmol_small_scale = np.zeros((len(masks), n))
         sat_sfe_tukey = np.zeros((len(masks), n)); sat_sfe_large_scale = np.zeros((len(masks), n)); sat_sfe_small_scale = np.zeros((len(masks), n))
         sat_fh2_tukey = np.zeros((len(masks), n)); sat_fh2_large_scale = np.zeros((len(masks), n)); sat_fh2_small_scale = np.zeros((len(masks), n))
@@ -73,6 +75,7 @@ for i, m in enumerate(masks):
             all_ssfr_tukey = np.zeros((len(masks), n)); all_ssfr_large_scale = np.zeros((len(masks), n)); all_ssfr_small_scale = np.zeros((len(masks), n))
             all_sfr_tukey = np.zeros((len(masks), n)); all_sfr_large_scale = np.zeros((len(masks), n)); all_sfr_small_scale = np.zeros((len(masks), n))
             all_h1_tukey = np.zeros((len(masks), n)); all_h1_large_scale = np.zeros((len(masks), n)); all_h1_small_scale = np.zeros((len(masks), n))
+            all_h2_tukey = np.zeros((len(masks), n)); all_h2_large_scale = np.zeros((len(masks), n)); all_h2_small_scale = np.zeros((len(masks), n))
             all_fmol_tukey = np.zeros((len(masks), n)); all_fmol_large_scale = np.zeros((len(masks), n)); all_fmol_small_scale = np.zeros((len(masks), n))
             all_sfe_tukey = np.zeros((len(masks), n)); all_sfe_large_scale = np.zeros((len(masks), n)); all_sfe_small_scale = np.zeros((len(masks), n))
             all_fh2_tukey = np.zeros((len(masks), n)); all_fh2_large_scale = np.zeros((len(masks), n)); all_fh2_small_scale = np.zeros((len(masks), n))
@@ -99,7 +102,12 @@ for i, m in enumerate(masks):
     cen_h1_tukey[i] = np.log10(tukey)
     cen_h1_large_scale[i] = scale / (np.log(10.)*tukey)
     cen_h1_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
-    
+
+    tukey, scale = tukey_biweight(cen_gas_h2)
+    cen_h2_tukey[i] = np.log10(tukey)
+    cen_h2_large_scale[i] = scale / (np.log(10.)*tukey)
+    cen_h2_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
+
     tukey, scale = tukey_biweight(cen_gas_fmol)
     tukey[np.where(tukey == 0.)[0]] = 1.e-6
     if snap == '151':
@@ -119,6 +127,7 @@ for i, m in enumerate(masks):
     cen_fh2_tukey[i] = np.log10(tukey)
     cen_fh2_large_scale[i] = scale / (np.log(10.)*tukey)
     cen_fh2_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
+
 
 
     if gals == 'all':
@@ -145,6 +154,11 @@ for i, m in enumerate(masks):
         sat_h1_large_scale[i] = scale / (np.log(10.)*tukey)
         sat_h1_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
 
+        tukey, scale = tukey_biweight(sat_gas_h2)
+        sat_h2_tukey[i] = np.log10(tukey)
+        sat_h2_large_scale[i] = scale / (np.log(10.)*tukey)
+        sat_h2_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
+
         tukey, scale = tukey_biweight(sat_gas_fmol)
         tukey[np.where(tukey == 0.)[0]] = 1.e-6
         sat_fmol_tukey[i] = np.log10(tukey)
@@ -165,6 +179,7 @@ for i, m in enumerate(masks):
         ssfr = np.concatenate((cen_gas_ssfr, sat_gas_ssfr))
         sfr = np.concatenate((cen_gas_sfr, sat_gas_sfr))
         h1 = np.concatenate((cen_gas_h1, sat_gas_h1))
+        h2 = np.concatenate((cen_gas_h2, sat_gas_h2))
         fmol = np.concatenate((cen_gas_fmol, sat_gas_fmol))
         sfe = np.concatenate((cen_gas_sfe, sat_gas_sfe))
         fh2 = np.concatenate((cen_gas_fh2, sat_gas_fh2))
@@ -187,6 +202,11 @@ for i, m in enumerate(masks):
         all_h1_large_scale[i] = scale / (np.log(10.)*tukey)
         all_h1_small_scale[i] = scale / (np.sqrt(all_no_gals[i])* np.log(10.)*tukey)
 
+        tukey, scale = tukey_biweight(h2)
+        all_h2_tukey[i] = np.log10(tukey)
+        all_h2_large_scale[i] = scale / (np.log(10.)*tukey)
+        all_h2_small_scale[i] = scale / (np.sqrt(all_no_gals[i])* np.log(10.)*tukey)
+
         tukey, scale = tukey_biweight(fmol)
         tukey[np.where(tukey == 0.)[0]] = 1.e-6
         if snap == '151':
@@ -207,7 +227,6 @@ for i, m in enumerate(masks):
         all_fh2_tukey[i] = np.log10(tukey)
         all_fh2_large_scale[i] = scale / (np.log(10.)*tukey)
         all_fh2_small_scale[i] = scale / (np.sqrt(all_no_gals[i])* np.log(10.)*tukey)
-
 
     with h5py.File(results_dir+'_ssfr_data.h5', 'a') as f:
         f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
@@ -253,6 +272,21 @@ for i, m in enumerate(masks):
             f.create_dataset('sat_tukey_'+bin_labels[i], data=np.array(sat_h1_tukey[i]))
             f.create_dataset('sat_large_scale_'+bin_labels[i], data=np.array(sat_h1_large_scale[i]))
             f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_h1_small_scale[i]))
+
+    with h5py.File(results_dir+'_h2_data.h5', 'a') as f:
+        f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
+        f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_h2_tukey[i]))
+        f.create_dataset('cen_large_scale_'+bin_labels[i], data=np.array(cen_h2_large_scale[i]))
+        f.create_dataset('cen_small_scale_'+bin_labels[i], data=np.array(cen_h2_small_scale[i]))
+        if gals == 'all':
+            f.create_dataset('all_no_gals_'+bin_labels[i], data=np.array(all_no_gals[i]))
+            f.create_dataset('all_tukey_'+bin_labels[i], data=np.array(all_h2_tukey[i]))
+            f.create_dataset('all_large_scale_'+bin_labels[i], data=np.array(all_h2_large_scale[i]))
+            f.create_dataset('all_small_scale_'+bin_labels[i], data=np.array(all_h2_small_scale[i]))
+            f.create_dataset('sat_no_gals_'+bin_labels[i], data=np.array(sat_no_gals[i]))
+            f.create_dataset('sat_tukey_'+bin_labels[i], data=np.array(sat_h2_tukey[i]))
+            f.create_dataset('sat_large_scale_'+bin_labels[i], data=np.array(sat_h2_large_scale[i]))
+            f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_h2_small_scale[i]))
         
     with h5py.File(results_dir+'_fmol_data.h5', 'a') as f:
         f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
@@ -350,6 +384,11 @@ cen_h1_tukey = np.log10(tukey)
 cen_h1_large_scale = scale / (np.log(10.)*tukey)
 cen_h1_small_scale = scale / (np.sqrt(cen_no_gals)* np.log(10.)*tukey)
 
+tukey, scale = tukey_biweight(cen_gas_h2)
+cen_h2_tukey = np.log10(tukey)
+cen_h2_large_scale = scale / (np.log(10.)*tukey)
+cen_h2_small_scale = scale / (np.sqrt(cen_no_gals)* np.log(10.)*tukey)
+
 tukey, scale = tukey_biweight(cen_gas_fmol)
 tukey[np.where(tukey == 0.)[0]] = 1.e-6
 cen_fmol_tukey = np.log10(tukey)
@@ -366,14 +405,12 @@ cen_fh2_tukey = np.log10(tukey)
 cen_fh2_large_scale = scale / (np.log(10.)*tukey)
 cen_fh2_small_scale = scale / (np.sqrt(cen_no_gals)* np.log(10.)*tukey)
 
-
 # satellites:
 sat_no_gals = len(sat_gas_sfr)
 sat_gas_ssfr = sat_gas_sfr / sat_star_m
 sat_gas_fmol = sat_gas_h2 / sat_gas_h1
 sat_gas_sfe = sat_gas_sfr / sat_gas_h2
 sat_gas_fh2 = sat_gas_h2 / sat_star_m
-
 
 tukey, scale = tukey_biweight(sat_gas_sfr)
 tukey[np.where(tukey == 0.)[0]] = 1.e-6
@@ -390,6 +427,11 @@ tukey, scale = tukey_biweight(sat_gas_h1)
 sat_h1_tukey = np.log10(tukey)
 sat_h1_large_scale = scale / (np.log(10.)*tukey)
 sat_h1_small_scale = scale / (np.sqrt(cen_no_gals)* np.log(10.)*tukey)
+
+tukey, scale = tukey_biweight(sat_gas_h2)
+sat_h2_tukey = np.log10(tukey)
+sat_h2_large_scale = scale / (np.log(10.)*tukey)
+sat_h2_small_scale = scale / (np.sqrt(cen_no_gals)* np.log(10.)*tukey)
 
 tukey, scale = tukey_biweight(sat_gas_fmol)
 tukey[np.where(tukey == 0.)[0]] = 1.e-6
@@ -426,6 +468,16 @@ with h5py.File(results_dir+'_h1_data.h5', 'a') as f:
         f.create_dataset('sat_large_scale_'+bin_label, data=np.array(sat_h1_large_scale))
         f.create_dataset('cen_small_scale_'+bin_label, data=np.array(cen_h1_small_scale))
         f.create_dataset('sat_small_scale_'+bin_label, data=np.array(sat_h1_small_scale))
+
+with h5py.File(results_dir+'_h2_data.h5', 'a') as f:
+        f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
+        f.create_dataset('sat_no_gals_'+bin_label, data=np.array(sat_no_gals))
+        f.create_dataset('cen_tukey_'+bin_label, data=np.array(cen_h2_tukey))
+        f.create_dataset('sat_tukey_'+bin_label, data=np.array(sat_h2_tukey))
+        f.create_dataset('cen_large_scale_'+bin_label, data=np.array(cen_h2_large_scale))
+        f.create_dataset('sat_large_scale_'+bin_label, data=np.array(sat_h2_large_scale))
+        f.create_dataset('cen_small_scale_'+bin_label, data=np.array(cen_h2_small_scale))
+        f.create_dataset('sat_small_scale_'+bin_label, data=np.array(sat_h2_small_scale))
 
 with h5py.File(results_dir+'_fmol_data.h5', 'a') as f:
         f.create_dataset('cen_no_gals_'+bin_label, data=np.array(cen_no_gals))
