@@ -65,10 +65,17 @@ sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5', LoadHalo=False)
 gal_cent = np.array([i.central for i in sim.galaxies])
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
-gal_ssfr = np.log10(gal_sfr / gal_sm)
+gal_h1_frac = np.array([i.masses['HI'].in_units('Msun') /i.masses['stellar'].in_units('Msun') for i in sim.galaxies ])
+gal_h2_frac = np.array([i.masses['H2'].in_units('Msun') /i.masses['stellar'].in_units('Msun') for i in sim.galaxies ])
+gal_gas_frac = np.array([i.masses['gas'].in_units('Msun') /i.masses['stellar'].in_units('Msun') for i in sim.galaxies ])
 
+gal_ssfr = np.log10(gal_sfr / gal_sm)
 gal_sm = np.log10(gal_sm)
 gal_sfr = np.log10(gal_sfr)
+
+gal_h1_frac[np.where(gal_h1_frac == 0.)[0]] = 1.e-6
+gal_h2_frac[np.where(gal_h2_frac == 0.)[0]] = 1.e-6
+gal_gas_frac[np.where(gal_gas_frac == 0.)[0]] = 1.e-6
 
 """
 Get sample of the green valley from Belfiore 18
@@ -93,24 +100,84 @@ plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
 if selection == '1':
         plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
 elif selection == '2':
-	plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 1 dex')
+        plt.plot(sm_plot, belfiore_lower, ls='--', lw=1.5, c='m')
+else:
+        plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+        plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
+plt.axvline(10., ls=':', lw=1.8, c='k')
+plt.axvline(10.5, ls=':', lw=1.8, c='k')
+plt.axvline(11., ls=':', lw=1.8, c='k')
+plt.annotate('Low', xy=(0.3, 0.9), xycoords='axes fraction',size=16)
+plt.annotate('Int', xy=(0.46, 0.9), xycoords='axes fraction',size=16)
+plt.annotate('High', xy=(0.7, 0.9), xycoords='axes fraction',size=16)
+plt.scatter(gal_sm, gal_sfr, s=0.3, c=np.log10(gal_h1_frac), cmap=new_cmap)
+plt.xlim(9.0,12.5)
+plt.ylim(-3.5, )
+#plt.clim(-12, -9)
+#plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
+plt.clim(-2, 0.5)
+plt.colorbar(label=r'$ \textrm{log}\ f_{HI}$')
+plt.legend(fontsize=12, loc=4)
+plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
+plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
+plt.savefig(plots_dir+'b18_sample_all_colormap_fh1.png')
+plt.clf()
+
+
+plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+if selection == '1':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+elif selection == '2':
+	plt.plot(sm_plot, belfiore_lower, ls='--', lw=1.5, c='m')
 else:
 	plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
 	plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
-plt.axvline(10., ls='--', lw=1.5, c='k')
-plt.axvline(10.5, ls='--', lw=1.5, c='k')
-plt.axvline(11., ls='--', lw=1.5, c='k')
-plt.scatter(gal_sm, gal_sfr, s=1, c=gal_ssfr, cmap=new_cmap)
-plt.xlim(9.5,12.5)
+plt.axvline(10., ls=':', lw=1.8, c='k')
+plt.axvline(10.5, ls=':', lw=1.8, c='k')
+plt.axvline(11., ls=':', lw=1.8, c='k')
+plt.annotate('Low', xy=(0.3, 0.9), xycoords='axes fraction',size=16)
+plt.annotate('Int', xy=(0.46, 0.9), xycoords='axes fraction',size=16)
+plt.annotate('High', xy=(0.7, 0.9), xycoords='axes fraction',size=16)
+plt.scatter(gal_sm, gal_sfr, s=0.3, c=np.log10(gal_h2_frac), cmap=new_cmap)
+plt.xlim(9.0,12.5)
+plt.ylim(-3.5, )
+#plt.clim(-12, -9)
+#plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
+plt.clim(-2, 0.5)
+plt.colorbar(label=r'$ \textrm{log}\ f_{H_2}$')
+plt.legend(fontsize=12, loc=4)
+plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
+plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
+plt.savefig(plots_dir+'b18_sample_all_colormap_fh2.png')
+plt.clf()
+
+plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
+if selection == '1':
+        plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
+elif selection == '2':
+        plt.plot(sm_plot, belfiore_lower, ls='--', lw=1.5, c='m')
+else:
+        plt.plot(sm_plot, new_upper, ls='--', lw=1.5, c='b', label='B18 + 0.25 dex')
+        plt.plot(sm_plot, new_lower, ls='-.', lw=1.5, c='b', label='B18 - 0.75 dex')
+plt.axvline(10., ls=':', lw=1.8, c='k')
+plt.axvline(10.5, ls=':', lw=1.8, c='k')
+plt.axvline(11., ls=':', lw=1.8, c='k')
+plt.annotate('Low', xy=(0.3, 0.9), xycoords='axes fraction',size=16)
+plt.annotate('Int', xy=(0.46, 0.9), xycoords='axes fraction',size=16)
+plt.annotate('High', xy=(0.7, 0.9), xycoords='axes fraction',size=16)
+plt.scatter(gal_sm, gal_sfr, s=0.3, c=gal_ssfr, cmap=new_cmap)
+plt.xlim(9.0,12.5)
 plt.ylim(-3.5, )
 plt.clim(-12, -9)
 plt.colorbar(label=r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
-plt.legend(fontsize=12)
+plt.legend(fontsize=12, loc=4)
 plt.xlabel(r'$\log\ (M_{*} / M_{\odot})$')
 plt.ylabel(r'$\textrm{log} (\textrm{SFR} / M_{\odot}\textrm{yr}^{-1})$')
-plt.savefig(plots_dir+'b18_sample_all_colormap.png')
+plt.savefig(plots_dir+'b18_sample_all_colormap_ssfr.png')
 plt.clf()
 
+
+"""
 plt.plot(sm_plot, belfiore_main, ls='--', lw=1.5, c='m', label='B18')
 if selection == '1':
         plt.plot(sm_plot, belfiore_lower, ls='-.', lw=1.5, c='m', label='B18 - 0.5 dex')
@@ -227,3 +294,4 @@ with h5py.File(h5_dir+'gv_samples.h5', 'a') as f:
 	f.create_dataset(model+'_'+snap, data=np.array(gv_mask))
 with h5py.File(h5_dir+'sf_samples.h5', 'a') as f:
 	f.create_dataset(model+'_'+snap, data=np.array(sf_mask))
+"""
