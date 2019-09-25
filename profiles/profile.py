@@ -34,13 +34,14 @@ masks = [2, 3, 4]
 model = sys.argv[1]
 wind = sys.argv[2]
 snap = sys.argv[3]
-results_dir = sys.argv[4]
 
-centrals = sys.argv[5]
-if centrals == 'centrals'
+centrals = sys.argv[4]
+results_dir = sys.argv[5]
+
+if centrals == 'centrals':
     centrals = True
     results_dir += '/centrals/'
-elif centrals == 'satellites'
+elif centrals == 'satellites':
     centrals = False
     results_dir += '/satellites/'
 
@@ -52,6 +53,10 @@ if len(sys.argv) > 6:
         selection = 'green_valley'
     elif 'sf' in sample_file.split('/', -1)[-1]:
         selection = 'star_forming'
+    elif 'fq' in sample_file.split('/', -1)[-1]:
+        selection = 'fast_quench'
+    elif 'sq' in sample_file.split('/', -1)[-1]:
+        selection = 'slow_quench'
 
     results_dir += '/'+model + '_' + snap + '/' + wind + '/' + selection
 
@@ -59,7 +64,7 @@ if len(sys.argv) > 6:
         try:
                 gals = f[model+'_'+snap].value
         except KeyError:
-                print 'Need to identify galaxies first'
+                print('Need to identify galaxies first')
 
 else:
     sample_file = None
@@ -91,16 +96,19 @@ thubble = cosmo.age(redshift).value # in Gyr
 # load in the caesar galaxy data to make an initial cut of star forming galaxies
 gal_cent = np.array([i.central for i in sim.galaxies])
 if centrals:
-    print 'Looking at centrals'
+    print('Looking at centrals')
 else:
-    print 'Looking at satellites'
+    print('Looking at satellites')
     gal_cent = np.invert(gal_cent)
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
 gal_ssfr = gal_sfr / gal_sm
 
 with h5py.File(halflight_file, 'r') as f:
-    gal_rad = f[model+'_'+wind+'_'+snap+'_halflight'][:] # these are in pkpc
+    if wind == 's50':
+        gal_rad = f[model+'_s50j7k_'+snap+'_halflight'][:] # these are in pkpc
+    else:
+        gal_rad = f[model+'_'+wind+'_'+snap+'_halflight'][:] # these are in pkpc
 gal_rad = np.sum(gal_rad, axis=0) / 3.
 #gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
 
@@ -132,8 +140,8 @@ bh_pos = readsnap(snapfile, 'pos', 'bndry', suppress=1, units=1) / (h*(1.+redshi
 no_gals = np.zeros(len(bin_labels))
 
 for j, m in enumerate(masks):
-        print '\n'
-        print 'Looking at mass bin ' + bin_labels[j]
+        print('\n')
+        print('Looking at mass bin ' + bin_labels[j])
         if j != len(mass_bins) - 1:
                 sm_mask = (gal_sm > mass_bins[j]) & (gal_sm < mass_bins[j+1])
         else:
@@ -145,8 +153,8 @@ for j, m in enumerate(masks):
         gal_ids_use = gal_ids[sm_mask]
 
         no_gals[j] = len(gal_ids_use)
-        print str(no_gals[j]) + ' galaxies in bin'
-        print '\n'
+        print(str(no_gals[j]) + ' galaxies in bin')
+        print('\n')
 
         use_star_m = np.zeros((len(gal_ids_use), n))
         use_star_ages = np.zeros((len(gal_ids_use), n))
@@ -160,15 +168,15 @@ for j, m in enumerate(masks):
 
         for i in range(len(gal_ids_use)):
 
-                print '\n'
-                print 'Galaxy ' +str(gal_ids_use[i])
+                print('\n')
+                print('Galaxy ' +str(gal_ids_use[i]))
                 slist = sim.galaxies[gal_ids_use[i]].halo.slist
                 glist = sim.galaxies[gal_ids_use[i]].halo.glist
                 rhalf = gal_rad_use[i]
                 title = 'log M* = ' + str(round(gal_sm_use[i], 2)) + '; log(sSFR) = ' + format(round(gal_ssfr_use[i], 2))
 
-                print str(len(glist)) + ' gas particles'
-                print 'log sSFR: ' + format(round(gal_ssfr_use[i], 2))
+                print(str(len(glist)) + ' gas particles')
+                print('log sSFR: ' + format(round(gal_ssfr_use[i], 2)))
 
                 """
                 Get star particle data and correct for bh center or star com
@@ -183,7 +191,7 @@ for j, m in enumerate(masks):
                         pos -= bh_pos[sim.galaxies[gal_ids_use[i]].bhlist[0]]
                 else:
                         pos -= center_of_quantity(pos, mass)
-                        print 'No black holes to center on, centering on stars'
+                        print('No black holes to center on, centering on stars')
                 vel -= center_of_quantity(vel, mass)
 
                 if rotate_galaxies:
@@ -216,7 +224,7 @@ for j, m in enumerate(masks):
                                 s_pos = star_pos[slist]
                                 s_mass = star_mass[slist]
                                 pos -= center_of_quantity(s_pos, s_mass)
-                                print 'No black holes to center on, centering on stars'
+                                print('No black holes to center on, centering on stars')
 
                         if rotate_galaxies:
                                 pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
@@ -254,5 +262,5 @@ for j, m in enumerate(masks):
 
         del use_star_m, use_gas_sfr, use_gas_h1, use_gas_h2, use_gas_m, use_star_ages, gal_ids_use
         gc.collect()
-        print '\n'
+        print('\n')
 
