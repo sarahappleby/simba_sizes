@@ -3,8 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib import cm
-from plotting_methods import plot_belfiore
 import sys
+
+def plot_spindler():
+    r_low = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.75, 0.95, 1.05, 1.15, 1.25, 1.35, 1.45]
+    y_low = [-0.06, -0.005, -0.1, -0.13, -0.195, -0.22, -0.28, -0.29, -0.3, -0.28, -0.296, -0.266, -0.255]
+    r_high = [0.05, 0.15, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95, 1.25, 1.35, 1.45]
+    y_high = [0.335, 0.27, -0.11, -0.175, -0.2, -0.206, -0.24, -0.193, -0.147, -0.177, -0.22]
 
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
@@ -53,8 +58,12 @@ for i, b in enumerate(bin_labels):
         factor = dr*n
         bins = np.arange(0., factor, dr)
         rplot = bins+(dr*0.5)
-
     
+    minus = np.ones(len(ssfr_ratio))
+    minus[ssfr_ratio < 0.] = -1.
+    ssfr_ratio = np.log10(np.abs(ssfr_ratio)) * minus
+
+
     if i == 0.:
         for j in list(range(1, len(ssfr_err) -1 )):
             if (ssfr_err[j] > 10.* ssfr_err[j-1]) & (ssfr_err[j] > 1.):
