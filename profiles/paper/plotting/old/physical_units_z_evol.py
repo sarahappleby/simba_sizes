@@ -77,7 +77,7 @@ ax[1].set_ylabel(r'$\textrm{log} (\textrm{sSFR} / \textrm{yr}^{-1})$')
 ax[1].legend(fontsize=12, loc=3)
 ax[1].annotate('z=1', xy=(0.9, 0.9), xycoords='axes fraction',size=13,bbox=dict(boxstyle="round", fc="w"))
 
-plt.savefig(plot_dir+'redshift_ssfr.png')
+plt.savefig(plot_dir+'phys_redshift_ssfr.png')
 plt.show()
 plt.clf()
 """

@@ -16,13 +16,15 @@ with h5py.File(sample_file, 'r') as f:
 		print('Need to identify galaxies first')
 
 if 'gv' in sample_file.split('/', -1)[-1]:
-	name = 'green_valley'
+    selection = 'gv'
+    name = 'green_valley'
 elif 'sf' in sample_file.split('/', -1)[-1]:
-	name = 'star_forming'
+    selection = 'sf'
+    name = 'star_forming'
 
-mass_bins = [10., 10.5, 11.]
+mass_bins = [10., 10.5, 11.0]
 bin_labels = ['10.0-10.5', '10.5-11.0', '>11.0']
-angle = 'rotated_faceon'
+angle = 'random_orientation'
 
 masks = bin_labels
 
@@ -31,9 +33,14 @@ basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/physical_unit
 basic_dir = '/home/sapple/simba_sizes/profiles/paper/'
 
 profs_file = basic_dir + 'all_profs/'+name+'_'+angle + '.h5'
-results_dir = '/home/sapple/simba_sizes/profiles/paper/all_profs/'+wind+'_'
+results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
 
-results_dir += name + '_' + angle
+if angle == 'rotated_faceon':
+    angle = 'rot'
+elif angle == 'random_orientation':
+    angle = 'rand'
+
+results_dir += selection + '_' + angle
 
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5', LoadHalo=False)
@@ -62,10 +69,10 @@ for i, b in enumerate(bin_labels):
 
 	mask = mass_mask*gal_ids*np.invert(gal_cent)
 	with h5py.File(profs_file, 'r') as f:
-		sat_star_m = f['sm'].value
-		sat_gas_sfr = f['sfr'].value
-		sat_gas_h1 = f['h1_m'].value
-		sat_gas_h2 = f['h2_m'].value
+		sat_star_m = f['sm'].value[mask]
+		sat_gas_sfr = f['sfr'].value[mask]
+		sat_gas_h1 = f['h1_m'].value[mask]
+		sat_gas_h2 = f['h2_m'].value[mask]
 		
 	if i == 0:
 		n = cen_star_m.shape[1]

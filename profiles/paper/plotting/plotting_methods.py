@@ -5,7 +5,7 @@ import matplotlib.cm as cm
 import h5py
 
 def tukey_biweight(x, c=5.0, epsilon=1.e-11):
-    median = np.nanpercentile(x, '50', axis=0)
+    median = np.nanpercentile(x, 50, axis=0)
     mad = np.nanmedian(np.abs(x - median), axis=0)
     u = (x - median)/(c*mad + epsilon)
     weights = np.zeros(u.shape)
@@ -15,14 +15,56 @@ def tukey_biweight(x, c=5.0, epsilon=1.e-11):
     n = x.shape[0]
     num = np.sqrt(np.nansum(((x - tukey)**2. * (1. - u**2.)**4.)*mask, axis=0))
     den = np.abs(np.nansum(((1. - u )*(1 - 5.*(u**2.)))*mask, axis=0))
-    scale = np.sqrt(n)*num / den
+    scale = np.sqrt(n)*num / den 
     t = 1.96 # 97.5% of t distribution with df = max(0.7(n-1), 1)
     return tukey, scale
+
+def plot_kennicutt(ax, color='k', labels=False):
+    def kennicutt_schmidt(sigma_gas):
+        # sigma_gas in Msun/pc**2
+        return (1.4 *sigma_gas) -3.6
+    sigma_gas = np.arange(0.8, 5., 0.2)
+    sigma_sfr = kennicutt_schmidt(sigma_gas)
+    sigma_sfr = np.log10((10.**sigma_sfr) / 1.75)
+    
+    low_x = np.array([0.17, 0.8]) # points taken from Kennicutt and Evans 2012, fig 12
+    low_y = np.array([-4.5, -2.46])
+    low_y = np.log10((10.**low_y) / 1.75) # correct by 1.7 to convert from Salpeter to Chabrier IMF
+
+    if not labels:
+        ax.plot(low_x, low_y, ls='-', c=color, lw=2)
+        ax.plot(sigma_gas, sigma_sfr, ls='--', c=color, lw=2)
+    else:
+        ax.plot(sigma_gas, sigma_sfr, ls='--', c=color, label=labels[0], lw=2)
+        ax.plot(low_x, low_y, ls='-', c=color, lw=2, label=labels[1])
+    return
+
+def plot_tacchella(ax, radial, colors, label=False):
+    if radial == 'phys':
+        aa = ascii.read('t18_sSFR_physR.dat')
+    elif radial == 'norm':
+        aa = ascii.read('t18_sSFR_normR.dat')
+    x = aa['radius']
+    lowM_50 = np.log10(np.array(aa['sSFR_lowM_50']) /1.e9)
+    lowM_16 = np.log10(np.array(aa['sSFR_lowM_16']) /1.e9)
+    lowM_84 = np.log10(np.array(aa['sSFR_lowM_84']) /1.e9)
+    highM_50 = np.log10(np.array(aa['sSFR_highM_50']) /1.e9)
+    highM_16 = np.log10(np.array(aa['sSFR_highM_16']) /1.e9)
+    highM_84 = np.log10(np.array(aa['sSFR_highM_84']) /1.e9)
+    if not label:
+        ax.plot(x,lowM_50 , color=colors[0], lw=1.5)
+        ax.plot(x,highM_50, color=colors[1], lw=1.5)
+    elif label:
+        ax.plot(x,lowM_50 , color=colors[0], lw=1.5, label=r'$\textbf{T18};\ 10.0 < \textrm{log} (M_* / M_{\odot}) < 10.5$')
+        ax.plot(x,highM_50 , color=colors[1], lw=1.5, label=r'$\textbf{T18};\ 10.5 < \textrm{log} (M_* / M_{\odot}) < 11.0$')
+    ax.fill_between(x, lowM_84, lowM_16, where=lowM_84 >= lowM_16, facecolor=colors[0], alpha=0.25, edgecolor='none')
+    ax.fill_between(x, highM_84, highM_16, where=highM_84 >= highM_16, facecolor=colors[1], alpha=0.25, edgecolor='none')
+
 
 def plot_belfiore(ax, sample, colors, mass_b18=[9.0,  9.5, 10.0,  10.5, 11., 11.5], label=False):
     if sample == 'sf':
         aa = ascii.read('b18_ssfr_gradients_main_sequence.dat')
-    if sample == 'gv':
+    elif sample == 'gv':
         aa = ascii.read('b18_ssfr_gradients_GV.dat')
     x=aa['R']
     nmass = len(mass_b18)
@@ -34,9 +76,9 @@ def plot_belfiore(ax, sample, colors, mass_b18=[9.0,  9.5, 10.0,  10.5, 11., 11.
             aa['{:.2f}'.format(mass_b18[nn])+'-'+'{:.2f}'.format(mass_b18[nn+1])+' error sSFR'])
 
         if not label:
-            ax.plot(x,y , color=colors[nn], lw=1.5)
+            ax.plot(x,y , color=colors[nn], lw=1.5, linestyle='--')
         elif label:
-            ax.plot(x,y , color=colors[nn], lw=1.5, label=r'$\textbf{B18};\ $'+ '{:.1f}'.format(mass_b18[nn])+r'$\ < \textrm{log} (M_* / M_{\odot}) <\ $'+'{:.1f}'.format(mass_b18[nn+1]))
+            ax.plot(x,y , color=colors[nn], lw=1.5, linestyle='--', label=r'$\textbf{B18};\ $'+ '{:.1f}'.format(mass_b18[nn])+r'$\ < \textrm{log} (M_* / M_{\odot}) <\ $'+'{:.1f}'.format(mass_b18[nn+1]))
         ax.fill_between(x, y1, y2, where=y1 >= y2, facecolor=colors[nn], alpha=0.3, edgecolor='none')
 
 def get_labels(bins):
