@@ -104,9 +104,11 @@ for i, b in enumerate(bin_labels):
 	sat_ssfr_small_scale = sat_scale / np.sqrt(sat_no_gals[i])
 	sat_ssfr_jk, sat_ssfr_cv_err = cosmic_variance_nolog(sat_gas_ssfr, sat_pos, boxsize, 'ssfr')
 	sat_ssfr_err = np.sqrt(sat_ssfr_cv_err**2 + sat_ssfr_small_scale**2)
-
-	ssfr_ratio = (sat_tukey / cen_tukey) - 1.
-	ssfr_err = ssfr_ratio * np.sqrt((cen_ssfr_err / cen_tukey)**2. + (sat_ssfr_err / sat_tukey)**2. ) 
+	
+	ssfr_ratio = np.log10(sat_tukey) - np.log10(cen_tukey)
+	sat_log_ssfr_err = sat_ssfr_err / (sat_tukey * np.log(10.))
+	cen_log_ssfr_err = cen_ssfr_err / (cen_tukey * np.log(10.))
+	ssfr_ratio_err = np.sqrt(sat_log_ssfr_err**2 + cen_log_ssfr_err**2)
 
 	#h1
 	cen_tukey, cen_scale = tukey_biweight(cen_gas_h1)
@@ -118,15 +120,19 @@ for i, b in enumerate(bin_labels):
 	sat_h1_small_scale = sat_scale / np.sqrt(sat_no_gals[i])
 	sat_h1_jk, sat_h1_cv_err = cosmic_variance_nolog(sat_gas_h1, sat_pos, boxsize, 'h1')
 	sat_h1_err = np.sqrt(sat_h1_cv_err**2 + sat_h1_small_scale**2)
+		
+	h1_ratio = np.log10(sat_tukey) - np.log10(cen_tukey)
+	sat_log_h1_err = sat_h1_err / (sat_tukey * np.log(10.))
+	cen_log_h1_err = cen_h1_err / (cen_tukey * np.log(10.))
+	h1_ratio_err = np.sqrt(sat_log_h1_err**2 + cen_log_h1_err**2)
 
-	h1_ratio = (sat_tukey / cen_tukey) - 1.
-	h1_err = h1_ratio * np.sqrt((cen_h1_err / cen_tukey)**2. + (sat_h1_err / sat_tukey)**2. )
+
 
 	with h5py.File(results_dir+'_sat_cent_ratio_data.h5', 'a') as f:
 			f.create_dataset('cen_no_gals_'+b, data=np.array(cen_no_gals[i]))
 			f.create_dataset('sat_no_gals_'+b, data=np.array(sat_no_gals[i]))
 			f.create_dataset('ssfr_ratio_'+b, data=np.array(ssfr_ratio))
-			f.create_dataset('ssfr_err_'+b, data=np.array(ssfr_err))
+			f.create_dataset('ssfr_err_'+b, data=np.array(ssfr_ratio_err))
 			f.create_dataset('h1_ratio_'+b, data=np.array(h1_ratio))
-			f.create_dataset('h1_err_'+b, data=np.array(h1_err))
+			f.create_dataset('h1_err_'+b, data=np.array(h1_ratio_err))
 
