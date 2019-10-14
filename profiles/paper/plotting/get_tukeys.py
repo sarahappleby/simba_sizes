@@ -16,29 +16,31 @@ with h5py.File(sample_file, 'r') as f:
 		print('Need to identify galaxies first')
 
 if 'gv' in sample_file.split('/', -1)[-1]:
-    selection = 'gv'
-    name = 'green_valley'
+	selection = 'gv'
+	name = 'green_valley'
 elif 'sf' in sample_file.split('/', -1)[-1]:
-    selection = 'sf'
-    name = 'star_forming'
+	selection = 'sf'
+	name = 'star_forming'
 
 mass_bins = [10., 10.5, 11.0]
 bin_labels = ['10.0-10.5', '10.5-11.0', '>11.0']
-angle = 'random_orientation'
+mass_bins = [10., 10.6]
+bin_labels = ['10.0-10.6','>10.6']
+
+angle = 'rotated_faceon'
 
 masks = bin_labels
 
 basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/halfradius_units/'
-basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/physical_units/'
 basic_dir = '/home/sapple/simba_sizes/profiles/paper/'
 
 profs_file = basic_dir + 'all_profs/'+name+'_'+angle + '.h5'
 results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
 
 if angle == 'rotated_faceon':
-    angle = 'rot'
+	angle = 'rot'
 elif angle == 'random_orientation':
-    angle = 'rand'
+	angle = 'rand'
 
 results_dir += selection + '_' + angle
 
@@ -247,7 +249,7 @@ for i, b in enumerate(bin_labels):
 	all_fh2_tukey[i] = np.log10(tukey)
 	all_fh2_large_scale[i] = scale / (np.log(10.)*tukey)
 	all_fh2_small_scale[i] = scale / (np.sqrt(all_no_gals[i])* np.log(10.)*tukey)
-
+	
 	with h5py.File(results_dir+'_ssfr_data.h5', 'a') as f:
 		f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
 		f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_ssfr_tukey[i]))
@@ -289,7 +291,7 @@ for i, b in enumerate(bin_labels):
 		f.create_dataset('sat_tukey_'+bin_labels[i], data=np.array(sat_h1_tukey[i]))
 		f.create_dataset('sat_large_scale_'+bin_labels[i], data=np.array(sat_h1_large_scale[i]))
 		f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_h1_small_scale[i]))
-
+	
 	with h5py.File(results_dir+'_h2_data.h5', 'a') as f:
 		f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
 		f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_h2_tukey[i]))
@@ -303,7 +305,7 @@ for i, b in enumerate(bin_labels):
 		f.create_dataset('sat_tukey_'+bin_labels[i], data=np.array(sat_h2_tukey[i]))
 		f.create_dataset('sat_large_scale_'+bin_labels[i], data=np.array(sat_h2_large_scale[i]))
 		f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_h2_small_scale[i]))
-		
+    
 	with h5py.File(results_dir+'_fmol_data.h5', 'a') as f:
 		f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
 		f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_fmol_tukey[i]))
@@ -317,7 +319,7 @@ for i, b in enumerate(bin_labels):
 		f.create_dataset('sat_tukey_'+bin_labels[i], data=np.array(sat_fmol_tukey[i]))
 		f.create_dataset('sat_large_scale_'+bin_labels[i], data=np.array(sat_fmol_large_scale[i]))
 		f.create_dataset('sat_small_scale_'+bin_labels[i], data=np.array(sat_fmol_small_scale[i]))
-
+	
 	with h5py.File(results_dir+'_sfe_data.h5', 'a') as f:
 		f.create_dataset('cen_no_gals_'+bin_labels[i], data=np.array(cen_no_gals[i]))
 		f.create_dataset('cen_tukey_'+bin_labels[i], data=np.array(cen_sfe_tukey[i]))
