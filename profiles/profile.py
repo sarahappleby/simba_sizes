@@ -18,7 +18,7 @@ age_min = 0.
 age_max = 150.
 mass_loss = 1.18
 time = (age_max - age_min) * 1.e6
-rotate_galaxies = True
+rotate_galaxies = False
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
 factor = 5.
@@ -80,9 +80,9 @@ if not os.path.exists(results_dir):
         #os.makedirs(results_dir+'/profiles')
 
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
-if wind == 's50j7k':
+if model == 'm100n1024':
     halflight_file = '/home/sapple/simba_sizes/sizes/data/halfradius_R.h5'
-else:
+elif model == 'm50n512':
     halflight_file = '/home/sapple/simba_sizes/sizes/data/halfradius_agn_R.h5'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
@@ -165,6 +165,7 @@ for j, m in enumerate(masks):
         use_gas_h1_m = np.zeros((len(gal_ids_use), n))
         use_gas_h2_m = np.zeros((len(gal_ids_use), n))
         use_gas_temp = np.zeros((len(gal_ids_use), n))
+        use_gas_npart = np.zeros((len(gal_ids_use), n))
 
         for i in range(len(gal_ids_use)):
 
@@ -242,7 +243,7 @@ for j, m in enumerate(masks):
                         use_gas_temp[i] /= use_gas_m[i]
                         use_gas_h1_m[i] = make_profile(n, dr, r, h1*mass, rhalf)
                         use_gas_h2_m[i] = make_profile(n, dr, r, h2*mass, rhalf)
-                        
+                        use_gas_npart[i] = npart_profile(n, dr, r) 
 
                         #plot_profile(rplot, use_gas_sfr[i], results_dir+'/profiles/gas_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
                         #plot_profile(rplot, use_gas_h1[i], results_dir+'/profiles/gas_h1_profile_gal_'+str(gal_ids_use[i])+'.png', 'HI fraction surface density', title=title)
@@ -258,6 +259,7 @@ for j, m in enumerate(masks):
                 f.create_dataset('temp', data=np.array(use_gas_temp))
                 f.create_dataset('h1_m', data=np.array(use_gas_h1_m))
                 f.create_dataset('h2_m', data=np.array(use_gas_h2_m))
+                f.create_dataset('npart', data=np.array(use_gas_npart))
                 f.create_dataset('gal_ids', data=np.array(gal_ids_use))
 
         del use_star_m, use_gas_sfr, use_gas_h1, use_gas_h2, use_gas_m, use_star_ages, gal_ids_use
