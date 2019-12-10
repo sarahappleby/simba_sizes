@@ -1,3 +1,7 @@
+# SA: change so that we aren't doing this for first star forming then green valley galaxies
+# instead, do for all and then later we can select using our green valley sample etc.
+
+
 import h5py
 import sys
 import numpy as np
@@ -103,6 +107,8 @@ else:
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
 gal_ssfr = gal_sfr / gal_sm
+gal_sm = np.log10(gal_sm)
+gal_ssfr = np.log10(gal_ssfr)
 
 with h5py.File(halflight_file, 'r') as f:
     if wind == 's50':
@@ -110,16 +116,11 @@ with h5py.File(halflight_file, 'r') as f:
     else:
         gal_rad = f[model+'_'+wind+'_'+snap+'_halflight'][:] # these are in pkpc
 gal_rad = np.sum(gal_rad, axis=0) / 3.
-#gal_rad = np.array([i.radii['stellar_half_mass'].in_units('kpc') for i in sim.galaxies])
 
 gal_ids = np.array([True for i in range(len(sim.galaxies))])
 if sample_file:
     gal_ids = np.array([False for i in range(len(sim.galaxies))])
     gal_ids[gals] = True 
-
-gal_sm = np.log10(gal_sm[gal_ids*gal_cent])
-gal_ssfr = np.log10(gal_ssfr[gal_ids*gal_cent])
-gal_rad = gal_rad[gal_ids*gal_cent]
 gal_ids = np.arange(len(gal_ids))[gal_ids*gal_cent]
 
 # load in star particle data with readsnap
@@ -137,132 +138,103 @@ gas_temp = readsnap(snapfile, 'u', 'gas', suppress=1, units=1)
 
 bh_pos = readsnap(snapfile, 'pos', 'bndry', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 
-no_gals = np.zeros(len(bin_labels))
+all_star_m = np.zeros((len(sim.galaxies), n))
+all_h1 = np.zeros((len(sim.galaxies), n))
+all_h2 = np.zeros((len(sim.galaxies), n))
+all_h1_m = np.zeros((len(sim.galaxies), n))
+all_h2_m = np.zeros((len(sim.galaxies), n))
+all_gm = np.zeros((len(sim.galaxies), n))
+all_sfr = np.zeros((len(sim.galaxies), n))
+all_ages = np.zeros((len(sim.galaxies), n))
+all_temp = np.zeros((len(sim.galaxies), n))
+all_gas_npart = np.zeros((len(sim.galaxies), n))
+all_star_npart = np.zeros((len(sim.galaxies), n))
 
-for j, m in enumerate(masks):
-        print('\n')
-        print('Looking at mass bin ' + bin_labels[j])
-        if j != len(mass_bins) - 1:
-                sm_mask = (gal_sm > mass_bins[j]) & (gal_sm < mass_bins[j+1])
-        else:
-                sm_mask = gal_sm > mass_bins[j]
+for i in gal_ids:
+    
+    print('\n')
+    print('Galaxy ' +str(i))
+    slist = sim.galaxies[i].halo.slist
+    glist = sim.galaxies[i].halo.glist
+    rhalf = gal_rad[i]
+    title = 'log M* = ' + str(round(gal_sm[i], 2)) + '; log(sSFR) = ' + format(round(gal_ssfr[i], 2))
 
-        gal_sm_use = gal_sm[sm_mask]
-        gal_rad_use = gal_rad[sm_mask]
-        gal_ssfr_use = gal_ssfr[sm_mask]
-        gal_ids_use = gal_ids[sm_mask]
+    print(str(len(glist)) + ' gas particles')
+    print('log sSFR: ' + format(round(gal_ssfr[i], 2)))
 
-        no_gals[j] = len(gal_ids_use)
-        print(str(no_gals[j]) + ' galaxies in bin')
-        print('\n')
-
-        use_star_m = np.zeros((len(gal_ids_use), n))
-        use_star_ages = np.zeros((len(gal_ids_use), n))
-        use_gas_m = np.zeros((len(gal_ids_use), n))
-        use_gas_sfr = np.zeros((len(gal_ids_use), n))
-        use_gas_h1 = np.zeros((len(gal_ids_use), n))
-        use_gas_h2 = np.zeros((len(gal_ids_use), n))
-        use_gas_h1_m = np.zeros((len(gal_ids_use), n))
-        use_gas_h2_m = np.zeros((len(gal_ids_use), n))
-        use_gas_temp = np.zeros((len(gal_ids_use), n))
-        use_gas_npart = np.zeros((len(gal_ids_use), n))
-
-        for i in range(len(gal_ids_use)):
-
-                print('\n')
-                print('Galaxy ' +str(gal_ids_use[i]))
-                slist = sim.galaxies[gal_ids_use[i]].halo.slist
-                glist = sim.galaxies[gal_ids_use[i]].halo.glist
-                rhalf = gal_rad_use[i]
-                title = 'log M* = ' + str(round(gal_sm_use[i], 2)) + '; log(sSFR) = ' + format(round(gal_ssfr_use[i], 2))
-
-                print(str(len(glist)) + ' gas particles')
-                print('log sSFR: ' + format(round(gal_ssfr_use[i], 2)))
-
-                """
-                Get star particle data and correct for bh center or star com
-                """
-                pos = star_pos[slist]
-                vel = star_vels[slist]
-                mass = star_mass[slist]
-                tform = star_tform[slist]
-                ages = tage(cosmo, thubble, tform) * 1000. # get star ages in Myr
-
-                if len(sim.galaxies[gal_ids_use[i]].bhlist) > 0.:
-                        pos -= bh_pos[sim.galaxies[gal_ids_use[i]].bhlist[0]]
-                else:
-                        pos -= center_of_quantity(pos, mass)
-                        print('No black holes to center on, centering on stars')
-                vel -= center_of_quantity(vel, mass)
-
-                if rotate_galaxies:
-                        axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
-                        pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
-
-                r = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
-
-                #plot_name = results_dir + '/images/gal_'+str(gal_ids_use[i]) + '_stars.png'
-                #make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
-
-                use_star_m[i] = make_profile(n, dr, r, mass, rhalf)
-                use_star_ages[i] = make_profile(n, dr, r, ages*mass, rhalf)
-                use_star_ages[i] /= use_star_m[i]
-                
-                if len(glist) > 0.:
-                        """
-                        For the gas particles:
-                        """
-                        pos = gas_pos[glist]
-                        mass = gas_mass[glist]
-                        sfr = gas_sfr[glist]
-                        h1 = gas_h1[glist]
-                        h2 = gas_h2[glist]
-                        temp = gas_temp[glist]
+    """
+    Get star particle data and correct for bh center or star com
+    """
+    pos = star_pos[slist]
+    vel = star_vels[slist]
+    mass = star_mass[slist]
+    tform = star_tform[slist]
+    ages = tage(cosmo, thubble, tform) * 1000. # get star ages in Myr
+    
+    if len(sim.galaxies[i].bhlist) > 0.:
+        pos -= bh_pos[sim.galaxies[i].bhlist[0]]
+    else:
+        pos -= center_of_quantity(pos, mass)
+        print('No black holes to center on, centering on stars')
+    vel -= center_of_quantity(vel, mass)
+    
+    if rotate_galaxies:
+        axis, angle = compute_rotation_to_vec(pos[:, 0], pos[:, 1], pos[:, 2], vel[:, 0], vel[:, 1], vel[:, 2], mass, vec)
+        pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
         
-                        if len(sim.galaxies[gal_ids_use[i]].bhlist) > 0.:
-                                pos -= bh_pos[sim.galaxies[gal_ids_use[i]].bhlist[0]]
-                        else:
-                                s_pos = star_pos[slist]
-                                s_mass = star_mass[slist]
-                                pos -= center_of_quantity(s_pos, s_mass)
-                                print('No black holes to center on, centering on stars')
+    r = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
 
-                        if rotate_galaxies:
-                                pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
-
-                        r  = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
-
-                        #plot_name = results_dir + '/images/gal_'+str(gal_ids_use[i]) + '_gas.png'
-                        #make_image(pos[:, 0], pos[:, 1], np.log10(mass), plot_name, rhalf)
-
-                        use_gas_m[i] = make_profile(n, dr, r, mass, rhalf)
-                        use_gas_sfr[i] = make_profile(n, dr, r, sfr, rhalf)
-                        use_gas_h1[i] = make_profile(n, dr, r, h1, rhalf)
-                        use_gas_h2[i] = make_profile(n, dr, r, h2, rhalf)
-                        use_gas_temp[i] = make_profile(n, dr, r, temp*mass, rhalf)
-                        use_gas_temp[i] /= use_gas_m[i]
-                        use_gas_h1_m[i] = make_profile(n, dr, r, h1*mass, rhalf)
-                        use_gas_h2_m[i] = make_profile(n, dr, r, h2*mass, rhalf)
-                        use_gas_npart[i] = npart_profile(n, dr, r) 
-
-                        #plot_profile(rplot, use_gas_sfr[i], results_dir+'/profiles/gas_sfr_profile_gal_'+str(gal_ids_use[i])+'.png', 'SFR surface density', title=title)
-                        #plot_profile(rplot, use_gas_h1[i], results_dir+'/profiles/gas_h1_profile_gal_'+str(gal_ids_use[i])+'.png', 'HI fraction surface density', title=title)
-                        #plot_profile(rplot, use_gas_h2[i], results_dir+'/profiles/gas_h2_profile_gal_'+str(gal_ids_use[i])+'.png', 'HII fraction surface density', title=title)
-
-        with h5py.File(results_dir+'/mask_'+str(m)+'_all_profiles.h5', 'a') as f:
-                f.create_dataset('gas_sfr', data=np.array(use_gas_sfr))
-                f.create_dataset('h1', data=np.array(use_gas_h1))
-                f.create_dataset('h2', data=np.array(use_gas_h2))
-                f.create_dataset('gm', data=np.array(use_gas_m))
-                f.create_dataset('sm', data=np.array(use_star_m))
-                f.create_dataset('ages', data=np.array(use_star_ages))
-                f.create_dataset('temp', data=np.array(use_gas_temp))
-                f.create_dataset('h1_m', data=np.array(use_gas_h1_m))
-                f.create_dataset('h2_m', data=np.array(use_gas_h2_m))
-                f.create_dataset('npart', data=np.array(use_gas_npart))
-                f.create_dataset('gal_ids', data=np.array(gal_ids_use))
-
-        del use_star_m, use_gas_sfr, use_gas_h1, use_gas_h2, use_gas_m, use_star_ages, gal_ids_use
-        gc.collect()
-        print('\n')
+    all_star_m[i] = make_profile(n, dr, r, mass, rhalf)
+    all_star_ages[i] = make_profile(n, dr, r, ages*mass, rhalf)
+    all_star_ages[i] /= all_star_m[i]
+    all_star_npart[i] = npart_profile(n, dr, r)
+    
+    
+    if len(glist) > 0.:
+        """
+        For the gas particles:
+        """
+        pos = gas_pos[glist]
+        mass = gas_mass[glist]
+        sfr = gas_sfr[glist]
+        h1 = gas_h1[glist]
+        h2 = gas_h2[glist]
+        temp = gas_temp[glist]
+        
+        if len(sim.galaxies[i].bhlist) > 0.:
+            pos -= bh_pos[sim.galaxies[i].bhlist[0]]
+        else:
+            s_pos = star_pos[slist]
+            s_mass = star_mass[slist]
+            pos -= center_of_quantity(s_pos, s_mass)
+            print('No black holes to center on, centering on stars')
+            
+        if rotate_galaxies:
+            pos[:, 0], pos[:, 1], pos[:, 2] = rotate(pos[:, 0], pos[:, 1], pos[:, 2], axis, angle)
+        
+        r  = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
+        
+        all_gas_m[i] = make_profile(n, dr, r, mass, rhalf)
+        all_gas_sfr[i] = make_profile(n, dr, r, sfr, rhalf)
+        all_gas_h1[i] = make_profile(n, dr, r, h1, rhalf)
+        all_gas_h2[i] = make_profile(n, dr, r, h2, rhalf)
+        all_gas_temp[i] = make_profile(n, dr, r, temp*mass, rhalf)
+        all_gas_temp[i] /= all_gas_m[i]
+        all_gas_h1_m[i] = make_profile(n, dr, r, h1*mass, rhalf)
+        all_gas_h2_m[i] = make_profile(n, dr, r, h2*mass, rhalf)
+        all_gas_npart[i] = npart_profile(n, dr, r) 
+        
+with h5py.File(results_dir+'/mask_'+str(m)+'_all_profiles.h5', 'a') as f:
+    f.create_dataset('gas_sfr', data=np.array(all_gas_sfr))
+    f.create_dataset('h1', data=np.array(all_gas_h1))
+    f.create_dataset('h2', data=np.array(all_gas_h2))
+    f.create_dataset('gm', data=np.array(all_gas_m))
+    f.create_dataset('sm', data=np.array(all_star_m))
+    f.create_dataset('ages', data=np.array(all_star_ages))
+    f.create_dataset('temp', data=np.array(all_gas_temp))
+    f.create_dataset('h1_m', data=np.array(all_gas_h1_m))
+    f.create_dataset('h2_m', data=np.array(all_gas_h2_m))
+    f.create_dataset('gas_npart', data=np.array(all_gas_npart))
+    f.create_dataset('star_npart', data=np.array(all_gas_npart))
+    f.create_dataset('gal_ids', data=np.array(gal_ids))
 
