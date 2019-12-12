@@ -137,4 +137,3 @@ if __name__ == '__main__':
                     
             with h5py.File(save_file, 'a') as hf:
                 hf.create_dataset(MODEL+'_'+WIND[iwind]+'_'+str(SNAP)+'_halflight', data=np.array(rhalf))
-                hf.create_dataset(MODEL+'_'+WIND[iwind]+'_'+str(SNAP)+'_halfmass', data=np.array(rhalfmass))
