@@ -18,10 +18,6 @@ import caesar
 
 from profile_methods import *
 
-age_min = 0.
-age_max = 150.
-mass_loss = 1.18
-time = (age_max - age_min) * 1.e6
 rotate_galaxies = False
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
@@ -39,40 +35,8 @@ model = sys.argv[1]
 wind = sys.argv[2]
 snap = sys.argv[3]
 
-centrals = sys.argv[4]
 results_dir = sys.argv[5]
 
-if centrals == 'centrals':
-    centrals = True
-    results_dir += '/centrals/'
-elif centrals == 'satellites':
-    centrals = False
-    results_dir += '/satellites/'
-
-
-if len(sys.argv) > 6:
-    sample_file = sys.argv[6]
-
-    if 'gv' in sample_file.split('/', -1)[-1]:
-        selection = 'green_valley'
-    elif 'sf' in sample_file.split('/', -1)[-1]:
-        selection = 'star_forming'
-    elif 'fq' in sample_file.split('/', -1)[-1]:
-        selection = 'fast_quench'
-    elif 'sq' in sample_file.split('/', -1)[-1]:
-        selection = 'slow_quench'
-
-    results_dir += '/'+model + '_' + snap + '/' + wind + '/' + selection
-
-    with h5py.File(sample_file, 'r') as f:
-        try:
-                gals = f[model+'_'+snap].value
-        except KeyError:
-                print('Need to identify galaxies first')
-
-else:
-    sample_file = None
-    results_dir += '/'+model + '_' + snap + '/' + wind + '/'
 
 if rotate_galaxies:
         results_dir += '/rotated_faceon'
@@ -80,14 +44,12 @@ else:
         results_dir += '/random_orientation'
 if not os.path.exists(results_dir):
         os.makedirs(results_dir)
-        #os.makedirs(results_dir+'/images')
-        #os.makedirs(results_dir+'/profiles')
 
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
-if model == 'm100n1024':
-    halflight_file = '/home/sapple/simba_sizes/sizes/data/halfradius_R.h5'
-elif model == 'm50n512':
-    halflight_file = '/home/sapple/simba_sizes/sizes/data/halfradius_agn_R.h5'
+if snap == '151':
+    halflight_file = '/home/sapple/simba_sizes/sizes/data/pyloser_sdss_r.h5'
+else:
+    halflight_file = '/home/sapple/simba_sizes/sizes/data/pyloser_v.h5'
 snapfile = data_dir+'snap_'+model+'_'+snap+'.hdf5'
 
 sim =  caesar.load(data_dir+'Groups/'+model+'_'+snap+'.hdf5')
@@ -99,11 +61,6 @@ thubble = cosmo.age(redshift).value # in Gyr
 
 # load in the caesar galaxy data to make an initial cut of star forming galaxies
 gal_cent = np.array([i.central for i in sim.galaxies])
-if centrals:
-    print('Looking at centrals')
-else:
-    print('Looking at satellites')
-    gal_cent = np.invert(gal_cent)
 gal_sm = np.array([i.masses['stellar'].in_units('Msun') for i in sim.galaxies])
 gal_sfr = np.array([i.sfr.in_units('Msun/yr') for i in sim.galaxies])
 gal_ssfr = gal_sfr / gal_sm
@@ -111,16 +68,10 @@ gal_sm = np.log10(gal_sm)
 gal_ssfr = np.log10(gal_ssfr)
 
 with h5py.File(halflight_file, 'r') as f:
-    if wind == 's50':
-        gal_rad = f[model+'_s50j7k_'+snap+'_halflight'][:] # these are in pkpc
-    else:
-        gal_rad = f[model+'_'+wind+'_'+snap+'_halflight'][:] # these are in pkpc
+        gal_rad = f['abs_'+model+'_'+wind+'_'+snap][:] # these are in pkpc
 gal_rad = np.sum(gal_rad, axis=0) / 3.
 
 gal_ids = np.array([True for i in range(len(sim.galaxies))])
-if sample_file:
-    gal_ids = np.array([False for i in range(len(sim.galaxies))])
-    gal_ids[gals] = True 
 gal_ids = np.arange(len(gal_ids))[gal_ids*gal_cent]
 
 # load in star particle data with readsnap
@@ -145,7 +96,6 @@ all_h1_m = np.zeros((len(sim.galaxies), n))
 all_h2_m = np.zeros((len(sim.galaxies), n))
 all_gm = np.zeros((len(sim.galaxies), n))
 all_sfr = np.zeros((len(sim.galaxies), n))
-all_ages = np.zeros((len(sim.galaxies), n))
 all_temp = np.zeros((len(sim.galaxies), n))
 all_gas_npart = np.zeros((len(sim.galaxies), n))
 all_star_npart = np.zeros((len(sim.galaxies), n))
@@ -168,8 +118,6 @@ for i in gal_ids:
     pos = star_pos[slist]
     vel = star_vels[slist]
     mass = star_mass[slist]
-    tform = star_tform[slist]
-    ages = tage(cosmo, thubble, tform) * 1000. # get star ages in Myr
     
     if len(sim.galaxies[i].bhlist) > 0.:
         pos -= bh_pos[sim.galaxies[i].bhlist[0]]
@@ -185,8 +133,6 @@ for i in gal_ids:
     r = np.sqrt(pos[:, 0]**2 +pos[:, 1]**2) / rhalf
 
     all_star_m[i] = make_profile(n, dr, r, mass, rhalf)
-    all_star_ages[i] = make_profile(n, dr, r, ages*mass, rhalf)
-    all_star_ages[i] /= all_star_m[i]
     all_star_npart[i] = npart_profile(n, dr, r)
     
     
