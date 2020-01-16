@@ -1,6 +1,3 @@
-# SA: change so that we aren't doing this for first star forming then green valley galaxies
-# instead, do for all and then later we can select using our green valley sample etc.
-
 
 import h5py
 import sys
@@ -18,7 +15,7 @@ import caesar
 
 from profile_methods import *
 
-rotate_galaxies = False
+rotate_galaxies = True
 vec = np.array([0, 0, 1]) # face-on projection to collapse the z direction
 
 factor = 5.
@@ -26,24 +23,19 @@ dr = 0.2
 n = int(factor / dr)
 rplot = np.arange(0., dr*n, dr) + (dr*0.5)
 
-# for making profiles
-mass_bins = [10., 10.5, 11.]
-bin_labels = ['10.0 - 10.5', '10.5 - 11.0', '> 11.0']
-masks = [2, 3, 4]
-
 model = sys.argv[1]
 wind = sys.argv[2]
 snap = sys.argv[3]
+results_dir = sys.argv[4]
 
-results_dir = sys.argv[5]
-
-
-if rotate_galaxies:
-        results_dir += '/rotated_faceon'
-else:
-        results_dir += '/random_orientation'
+results_dir += '/'+model+'_'+snap+'/'
 if not os.path.exists(results_dir):
         os.makedirs(results_dir)
+
+if rotate_galaxies:
+        results_file = results_dir+'all_profiles_rotated_faceon.h5'
+else:
+        results_file = results_dir+'all_profiles_random_orientation.h5'
 
 data_dir = '/home/rad/data/'+model+'/'+wind+'/'
 if snap == '151':
@@ -90,13 +82,13 @@ gas_temp = readsnap(snapfile, 'u', 'gas', suppress=1, units=1)
 bh_pos = readsnap(snapfile, 'pos', 'bndry', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
 
 all_star_m = np.zeros((len(sim.galaxies), n))
-all_h1 = np.zeros((len(sim.galaxies), n))
-all_h2 = np.zeros((len(sim.galaxies), n))
-all_h1_m = np.zeros((len(sim.galaxies), n))
-all_h2_m = np.zeros((len(sim.galaxies), n))
-all_gm = np.zeros((len(sim.galaxies), n))
-all_sfr = np.zeros((len(sim.galaxies), n))
-all_temp = np.zeros((len(sim.galaxies), n))
+all_gas_h1 = np.zeros((len(sim.galaxies), n))
+all_gas_h2 = np.zeros((len(sim.galaxies), n))
+all_gas_h1_m = np.zeros((len(sim.galaxies), n))
+all_gas_h2_m = np.zeros((len(sim.galaxies), n))
+all_gas_m = np.zeros((len(sim.galaxies), n))
+all_gas_sfr = np.zeros((len(sim.galaxies), n))
+all_gas_temp = np.zeros((len(sim.galaxies), n))
 all_gas_npart = np.zeros((len(sim.galaxies), n))
 all_star_npart = np.zeros((len(sim.galaxies), n))
 
@@ -170,13 +162,12 @@ for i in gal_ids:
         all_gas_h2_m[i] = make_profile(n, dr, r, h2*mass, rhalf)
         all_gas_npart[i] = npart_profile(n, dr, r) 
         
-with h5py.File(results_dir+'/mask_'+str(m)+'_all_profiles.h5', 'a') as f:
+with h5py.File(results_file, 'a') as f:
     f.create_dataset('gas_sfr', data=np.array(all_gas_sfr))
     f.create_dataset('h1', data=np.array(all_gas_h1))
     f.create_dataset('h2', data=np.array(all_gas_h2))
     f.create_dataset('gm', data=np.array(all_gas_m))
     f.create_dataset('sm', data=np.array(all_star_m))
-    f.create_dataset('ages', data=np.array(all_star_ages))
     f.create_dataset('temp', data=np.array(all_gas_temp))
     f.create_dataset('h1_m', data=np.array(all_gas_h1_m))
     f.create_dataset('h2_m', data=np.array(all_gas_h2_m))
