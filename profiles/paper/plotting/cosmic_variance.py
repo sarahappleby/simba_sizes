@@ -33,24 +33,20 @@ sample_file = sys.argv[4]
 angle = sys.argv[5]
 
 with h5py.File(sample_file, 'r') as f:
-		try:
-				gals = f[model+'_'+snap].value
-		except KeyError:
-				print('Need to identify galaxies first')
+    try:
+        gals = f[model+'_'+snap][:]
+    except KeyError:
+        print('Need to identify galaxies first')
 
 if 'gv' in sample_file.split('/', -1)[-1]:
 		selection = 'gv'
-		name = 'green_valley'
 elif 'sf' in sample_file.split('/', -1)[-1]:
 		selection = 'sf'
-		name = 'star_forming'
 
-basic_dir = '/home/sapple/simba_sizes/profiles/paper/'
-#basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/halfradius_units/'
-profs_file = basic_dir + 'all_profs/'+name+'_'+angle + '.h5'
-results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
-#results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/snap_'+snap+'_'
+basic_dir = '/home/sapple/simba_sizes/profiles/paper/with_dust_sizes/'
+profs_file = basic_dir + model+'_'+snap+'/all_profiles_'+angle + '.h5'
 
+results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'+selection
 results_dir += selection
 if angle == 'random_orientation':
 	results_dir += '_rand'
@@ -61,7 +57,6 @@ mass_bins = [10., 10.5, 11.0]
 bin_labels = ['10.0-10.5', '10.5-11.0', '>11.0']
 mass_bins = [10., 10.6]
 bin_labels = ['10.0-10.6','>10.6']
-masks = bin_labels
 
 caesar_dir = '/home/rad/data/'+model+'/'+wind+'/Groups/'
 sim =  caesar.load(caesar_dir+model+'_'+snap+'.hdf5', LoadHalo=False)
@@ -82,7 +77,7 @@ for i, b in enumerate(bin_labels):
 	mask = mass_mask*gal_ids*gal_cent
 	with h5py.File(profs_file, 'r') as f:
 		cen_star_m = f['sm'].value[mask]
-		cen_gas_sfr = f['sfr'].value[mask]
+		cen_gas_sfr = f['gas_sfr'].value[mask]
 		cen_gas_h1 = f['h1_m'].value[mask]
 		cen_gas_h2 = f['h2_m'].value[mask]
 		#cen_gal_ids = f['gal_ids'].value[mask]
@@ -96,7 +91,7 @@ for i, b in enumerate(bin_labels):
 	mask = mass_mask*gal_ids*np.invert(gal_cent)
 	with h5py.File(profs_file, 'r') as f:
 		sat_star_m = f['sm'].value[mask]
-		sat_gas_sfr = f['sfr'].value[mask]
+		sat_gas_sfr = f['gas_sfr'].value[mask]
 		sat_gas_h1 = f['h1_m'].value[mask]
 		sat_gas_h2 = f['h2_m'].value[mask]
 		#sat_gal_ids = f['gal_ids'].value[mask]
@@ -109,30 +104,30 @@ for i, b in enumerate(bin_labels):
 
 	if i == 0:
 		n = cen_star_m.shape[1]
-		cen_ssfr_jk = np.zeros((len(masks), n)); cen_ssfr_cv_err = np.zeros((len(masks), n))
-		cen_sfr_jk = np.zeros((len(masks), n)); cen_sfr_cv_err = np.zeros((len(masks), n))
-		cen_h1_jk = np.zeros((len(masks), n)); cen_h1_cv_err = np.zeros((len(masks), n))
-		cen_h2_jk = np.zeros((len(masks), n)); cen_h2_cv_err = np.zeros((len(masks), n))
-		cen_fmol_jk = np.zeros((len(masks), n)); cen_fmol_cv_err = np.zeros((len(masks), n))
-		cen_sfe_jk = np.zeros((len(masks), n)); cen_sfe_cv_err = np.zeros((len(masks), n))
-		cen_fh2_jk = np.zeros((len(masks), n)); cen_fh2_cv_err = np.zeros((len(masks), n))
+		cen_ssfr_jk = np.zeros((len(bin_labels), n)); cen_ssfr_cv_err = np.zeros((len(bin_labels), n))
+		cen_sfr_jk = np.zeros((len(bin_labels), n)); cen_sfr_cv_err = np.zeros((len(bin_labels), n))
+		cen_h1_jk = np.zeros((len(bin_labels), n)); cen_h1_cv_err = np.zeros((len(bin_labels), n))
+		cen_h2_jk = np.zeros((len(bin_labels), n)); cen_h2_cv_err = np.zeros((len(bin_labels), n))
+		cen_fmol_jk = np.zeros((len(bin_labels), n)); cen_fmol_cv_err = np.zeros((len(bin_labels), n))
+		cen_sfe_jk = np.zeros((len(bin_labels), n)); cen_sfe_cv_err = np.zeros((len(bin_labels), n))
+		cen_fh2_jk = np.zeros((len(bin_labels), n)); cen_fh2_cv_err = np.zeros((len(bin_labels), n))
 
 
-		sat_ssfr_jk = np.zeros((len(masks), n)); sat_ssfr_cv_err = np.zeros((len(masks), n))
-		sat_sfr_jk = np.zeros((len(masks), n)); sat_sfr_cv_err = np.zeros((len(masks), n))
-		sat_h1_jk = np.zeros((len(masks), n)); sat_h1_cv_err = np.zeros((len(masks), n))
-		sat_h2_jk = np.zeros((len(masks), n)); sat_h2_cv_err = np.zeros((len(masks), n))
-		sat_fmol_jk = np.zeros((len(masks), n)); sat_fmol_cv_err = np.zeros((len(masks), n))
-		sat_sfe_jk = np.zeros((len(masks), n)); sat_sfe_cv_err = np.zeros((len(masks), n))
-		sat_fh2_jk = np.zeros((len(masks), n)); sat_fh2_cv_err = np.zeros((len(masks), n))
+		sat_ssfr_jk = np.zeros((len(bin_labels), n)); sat_ssfr_cv_err = np.zeros((len(bin_labels), n))
+		sat_sfr_jk = np.zeros((len(bin_labels), n)); sat_sfr_cv_err = np.zeros((len(bin_labels), n))
+		sat_h1_jk = np.zeros((len(bin_labels), n)); sat_h1_cv_err = np.zeros((len(bin_labels), n))
+		sat_h2_jk = np.zeros((len(bin_labels), n)); sat_h2_cv_err = np.zeros((len(bin_labels), n))
+		sat_fmol_jk = np.zeros((len(bin_labels), n)); sat_fmol_cv_err = np.zeros((len(bin_labels), n))
+		sat_sfe_jk = np.zeros((len(bin_labels), n)); sat_sfe_cv_err = np.zeros((len(bin_labels), n))
+		sat_fh2_jk = np.zeros((len(bin_labels), n)); sat_fh2_cv_err = np.zeros((len(bin_labels), n))
 
-		all_ssfr_jk = np.zeros((len(masks), n)); all_ssfr_cv_err = np.zeros((len(masks), n))
-		all_sfr_jk = np.zeros((len(masks), n)); all_sfr_cv_err = np.zeros((len(masks), n))
-		all_h1_jk = np.zeros((len(masks), n)); all_h1_cv_err = np.zeros((len(masks), n))
-		all_h2_jk = np.zeros((len(masks), n)); all_h2_cv_err = np.zeros((len(masks), n))
-		all_fmol_jk = np.zeros((len(masks), n)); all_fmol_cv_err = np.zeros((len(masks), n))
-		all_sfe_jk = np.zeros((len(masks), n)); all_sfe_cv_err = np.zeros((len(masks), n))
-		all_fh2_jk = np.zeros((len(masks), n)); all_fh2_cv_err = np.zeros((len(masks), n))
+		all_ssfr_jk = np.zeros((len(bin_labels), n)); all_ssfr_cv_err = np.zeros((len(bin_labels), n))
+		all_sfr_jk = np.zeros((len(bin_labels), n)); all_sfr_cv_err = np.zeros((len(bin_labels), n))
+		all_h1_jk = np.zeros((len(bin_labels), n)); all_h1_cv_err = np.zeros((len(bin_labels), n))
+		all_h2_jk = np.zeros((len(bin_labels), n)); all_h2_cv_err = np.zeros((len(bin_labels), n))
+		all_fmol_jk = np.zeros((len(bin_labels), n)); all_fmol_cv_err = np.zeros((len(bin_labels), n))
+		all_sfe_jk = np.zeros((len(bin_labels), n)); all_sfe_cv_err = np.zeros((len(bin_labels), n))
+		all_fh2_jk = np.zeros((len(bin_labels), n)); all_fh2_cv_err = np.zeros((len(bin_labels), n))
 
 	cen_ssfr_jk[i], cen_ssfr_cv_err[i] = cosmic_variance(cen_gas_ssfr, cen_pos, boxsize, 'ssfr')  
 	cen_sfr_jk[i], cen_sfr_cv_err[i] = cosmic_variance(cen_gas_sfr, cen_pos, boxsize, 'sfr')
@@ -223,6 +218,7 @@ for i, b in enumerate(bin_labels):
 		f.create_dataset('sat_cv_err_'+bin_labels[i], data=np.array(sat_fh2_cv_err[i]))
 		f.create_dataset('all_jk_'+bin_labels[i], data=np.array(all_fh2_jk[i]))
 		f.create_dataset('all_cv_err_'+bin_labels[i], data=np.array(all_fh2_cv_err[i]))
+
 """
 # for gals > 10.5:
 bin_label = '>10.5'
