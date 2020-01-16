@@ -8,6 +8,7 @@ model = sys.argv[1]
 wind = sys.argv[2]
 snap = sys.argv[3]
 sample_file = sys.argv[4]
+angle = sys.argv[5]
 
 with h5py.File(sample_file, 'r') as f:
 	try:
@@ -17,24 +18,18 @@ with h5py.File(sample_file, 'r') as f:
 
 if 'gv' in sample_file.split('/', -1)[-1]:
 	selection = 'gv'
-	name = 'green_valley'
 elif 'sf' in sample_file.split('/', -1)[-1]:
 	selection = 'sf'
-	name = 'star_forming'
 
 mass_bins = [10., 10.5, 11.0]
 bin_labels = ['10.0-10.5', '10.5-11.0', '>11.0']
-mass_bins = [10., 10.6]
-bin_labels = ['10.0-10.6','>10.6']
+#mass_bins = [10., 10.6]
+#bin_labels = ['10.0-10.6','>10.6']
 
-angle = 'rotated_faceon'
 
-masks = bin_labels
+basic_dir = '/home/sapple/simba_sizes/profiles/paper/with_dust_sizes/'
 
-basic_dir = '/home/sapple/simba_sizes/profiles/paper/high_redshift/halfradius_units/'
-basic_dir = '/home/sapple/simba_sizes/profiles/paper/'
-
-profs_file = basic_dir + 'all_profs/'+name+'_'+angle + '.h5'
+profs_file = basic_dir + '/'+model+'_'+snap+'/all_profiles_'+angle+'.h5' # SA: find this
 results_dir = '/home/sapple/simba_sizes/profiles/paper/plotting/data/'
 
 if angle == 'rotated_faceon':
@@ -51,6 +46,9 @@ gal_cent = np.array([i.central for i in sim.galaxies])
 gal_ids = np.array([False for i in range(len(sim.galaxies))])
 gal_ids[gals] = True
 
+with h5py.File(sample_file, 'r') as sf:
+    sample_mask = sf[model+'_'+snap][:]
+
 cen_no_gals = np.zeros(len(bin_labels))
 sat_no_gals = np.zeros(len(bin_labels))
 all_no_gals = np.zeros(len(bin_labels))
@@ -62,45 +60,45 @@ for i, b in enumerate(bin_labels):
 	else:
 		mass_mask = gal_sm > mass_bins[i]
 
-	mask = mass_mask*gal_ids*gal_cent
+	mask = mass_mask*gal_ids*gal_cent*sample_mask
 	with h5py.File(profs_file, 'r') as f:
 		cen_star_m = f['sm'].value[mask]
-		cen_gas_sfr = f['sfr'].value[mask]
+		cen_gas_sfr = f['gas_sfr'].value[mask]
 		cen_gas_h1 = f['h1_m'].value[mask]
 		cen_gas_h2 = f['h2_m'].value[mask]
 
-	mask = mass_mask*gal_ids*np.invert(gal_cent)
+	mask = mass_mask*gal_ids*np.invert(gal_cent)*sample_mask
 	with h5py.File(profs_file, 'r') as f:
 		sat_star_m = f['sm'].value[mask]
-		sat_gas_sfr = f['sfr'].value[mask]
+		sat_gas_sfr = f['gas_sfr'].value[mask]
 		sat_gas_h1 = f['h1_m'].value[mask]
 		sat_gas_h2 = f['h2_m'].value[mask]
 		
 	if i == 0:
 		n = cen_star_m.shape[1]
-		cen_ssfr_tukey = np.zeros((len(masks), n)); cen_ssfr_large_scale = np.zeros((len(masks), n)); cen_ssfr_small_scale = np.zeros((len(masks), n))
-		cen_sfr_tukey = np.zeros((len(masks), n)); cen_sfr_large_scale = np.zeros((len(masks), n)); cen_sfr_small_scale = np.zeros((len(masks), n))
-		cen_h1_tukey = np.zeros((len(masks), n)); cen_h1_large_scale = np.zeros((len(masks), n)); cen_h1_small_scale = np.zeros((len(masks), n))
-		cen_h2_tukey = np.zeros((len(masks), n)); cen_h2_large_scale = np.zeros((len(masks), n)); cen_h2_small_scale = np.zeros((len(masks), n))
-		cen_fmol_tukey = np.zeros((len(masks), n)); cen_fmol_large_scale = np.zeros((len(masks), n)); cen_fmol_small_scale = np.zeros((len(masks), n))
-		cen_sfe_tukey = np.zeros((len(masks), n)); cen_sfe_large_scale = np.zeros((len(masks), n)); cen_sfe_small_scale = np.zeros((len(masks), n))
-		cen_fh2_tukey = np.zeros((len(masks), n)); cen_fh2_large_scale = np.zeros((len(masks), n)); cen_fh2_small_scale = np.zeros((len(masks), n))
+		cen_ssfr_tukey = np.zeros((len(bin_labels), n)); cen_ssfr_large_scale = np.zeros((len(bin_labels), n)); cen_ssfr_small_scale = np.zeros((len(bin_labels), n))
+		cen_sfr_tukey = np.zeros((len(bin_labels), n)); cen_sfr_large_scale = np.zeros((len(bin_labels), n)); cen_sfr_small_scale = np.zeros((len(bin_labels), n))
+		cen_h1_tukey = np.zeros((len(bin_labels), n)); cen_h1_large_scale = np.zeros((len(bin_labels), n)); cen_h1_small_scale = np.zeros((len(bin_labels), n))
+		cen_h2_tukey = np.zeros((len(bin_labels), n)); cen_h2_large_scale = np.zeros((len(bin_labels), n)); cen_h2_small_scale = np.zeros((len(bin_labels), n))
+		cen_fmol_tukey = np.zeros((len(bin_labels), n)); cen_fmol_large_scale = np.zeros((len(bin_labels), n)); cen_fmol_small_scale = np.zeros((len(bin_labels), n))
+		cen_sfe_tukey = np.zeros((len(bin_labels), n)); cen_sfe_large_scale = np.zeros((len(bin_labels), n)); cen_sfe_small_scale = np.zeros((len(bin_labels), n))
+		cen_fh2_tukey = np.zeros((len(bin_labels), n)); cen_fh2_large_scale = np.zeros((len(bin_labels), n)); cen_fh2_small_scale = np.zeros((len(bin_labels), n))
 
-		sat_ssfr_tukey = np.zeros((len(masks), n)); sat_ssfr_large_scale = np.zeros((len(masks), n)); sat_ssfr_small_scale = np.zeros((len(masks), n))
-		sat_sfr_tukey = np.zeros((len(masks), n)); sat_sfr_large_scale = np.zeros((len(masks), n)); sat_sfr_small_scale = np.zeros((len(masks), n))
-		sat_h1_tukey = np.zeros((len(masks), n)); sat_h1_large_scale = np.zeros((len(masks), n)); sat_h1_small_scale = np.zeros((len(masks), n))
-		sat_h2_tukey = np.zeros((len(masks), n)); sat_h2_large_scale = np.zeros((len(masks), n)); sat_h2_small_scale = np.zeros((len(masks), n))
-		sat_fmol_tukey = np.zeros((len(masks), n)); sat_fmol_large_scale = np.zeros((len(masks), n)); sat_fmol_small_scale = np.zeros((len(masks), n))
-		sat_sfe_tukey = np.zeros((len(masks), n)); sat_sfe_large_scale = np.zeros((len(masks), n)); sat_sfe_small_scale = np.zeros((len(masks), n))
-		sat_fh2_tukey = np.zeros((len(masks), n)); sat_fh2_large_scale = np.zeros((len(masks), n)); sat_fh2_small_scale = np.zeros((len(masks), n))
+		sat_ssfr_tukey = np.zeros((len(bin_labels), n)); sat_ssfr_large_scale = np.zeros((len(bin_labels), n)); sat_ssfr_small_scale = np.zeros((len(bin_labels), n))
+		sat_sfr_tukey = np.zeros((len(bin_labels), n)); sat_sfr_large_scale = np.zeros((len(bin_labels), n)); sat_sfr_small_scale = np.zeros((len(bin_labels), n))
+		sat_h1_tukey = np.zeros((len(bin_labels), n)); sat_h1_large_scale = np.zeros((len(bin_labels), n)); sat_h1_small_scale = np.zeros((len(bin_labels), n))
+		sat_h2_tukey = np.zeros((len(bin_labels), n)); sat_h2_large_scale = np.zeros((len(bin_labels), n)); sat_h2_small_scale = np.zeros((len(bin_labels), n))
+		sat_fmol_tukey = np.zeros((len(bin_labels), n)); sat_fmol_large_scale = np.zeros((len(bin_labels), n)); sat_fmol_small_scale = np.zeros((len(bin_labels), n))
+		sat_sfe_tukey = np.zeros((len(bin_labels), n)); sat_sfe_large_scale = np.zeros((len(bin_labels), n)); sat_sfe_small_scale = np.zeros((len(bin_labels), n))
+		sat_fh2_tukey = np.zeros((len(bin_labels), n)); sat_fh2_large_scale = np.zeros((len(bin_labels), n)); sat_fh2_small_scale = np.zeros((len(bin_labels), n))
 
-		all_ssfr_tukey = np.zeros((len(masks), n)); all_ssfr_large_scale = np.zeros((len(masks), n)); all_ssfr_small_scale = np.zeros((len(masks), n))
-		all_sfr_tukey = np.zeros((len(masks), n)); all_sfr_large_scale = np.zeros((len(masks), n)); all_sfr_small_scale = np.zeros((len(masks), n))
-		all_h1_tukey = np.zeros((len(masks), n)); all_h1_large_scale = np.zeros((len(masks), n)); all_h1_small_scale = np.zeros((len(masks), n))
-		all_h2_tukey = np.zeros((len(masks), n)); all_h2_large_scale = np.zeros((len(masks), n)); all_h2_small_scale = np.zeros((len(masks), n))
-		all_fmol_tukey = np.zeros((len(masks), n)); all_fmol_large_scale = np.zeros((len(masks), n)); all_fmol_small_scale = np.zeros((len(masks), n))
-		all_sfe_tukey = np.zeros((len(masks), n)); all_sfe_large_scale = np.zeros((len(masks), n)); all_sfe_small_scale = np.zeros((len(masks), n))
-		all_fh2_tukey = np.zeros((len(masks), n)); all_fh2_large_scale = np.zeros((len(masks), n)); all_fh2_small_scale = np.zeros((len(masks), n))
+		all_ssfr_tukey = np.zeros((len(bin_labels), n)); all_ssfr_large_scale = np.zeros((len(bin_labels), n)); all_ssfr_small_scale = np.zeros((len(bin_labels), n))
+		all_sfr_tukey = np.zeros((len(bin_labels), n)); all_sfr_large_scale = np.zeros((len(bin_labels), n)); all_sfr_small_scale = np.zeros((len(bin_labels), n))
+		all_h1_tukey = np.zeros((len(bin_labels), n)); all_h1_large_scale = np.zeros((len(bin_labels), n)); all_h1_small_scale = np.zeros((len(bin_labels), n))
+		all_h2_tukey = np.zeros((len(bin_labels), n)); all_h2_large_scale = np.zeros((len(bin_labels), n)); all_h2_small_scale = np.zeros((len(bin_labels), n))
+		all_fmol_tukey = np.zeros((len(bin_labels), n)); all_fmol_large_scale = np.zeros((len(bin_labels), n)); all_fmol_small_scale = np.zeros((len(bin_labels), n))
+		all_sfe_tukey = np.zeros((len(bin_labels), n)); all_sfe_large_scale = np.zeros((len(bin_labels), n)); all_sfe_small_scale = np.zeros((len(bin_labels), n))
+		all_fh2_tukey = np.zeros((len(bin_labels), n)); all_fh2_large_scale = np.zeros((len(bin_labels), n)); all_fh2_small_scale = np.zeros((len(bin_labels), n))
 
 	# centrals:
 	cen_no_gals[i] = len(cen_gas_sfr)
@@ -134,9 +132,9 @@ for i, b in enumerate(bin_labels):
 	tukey, scale = tukey_biweight(cen_gas_fmol)
 	tukey[np.where(tukey == 0.)[0]] = 1.e-6
 	if snap == '151':
-			for j in range(len(scale) -1):
-				if scale[j+1] > 2.*scale[j]:
-					scale[j+1] = np.median(scale)
+            for j in range(len(scale) -1):
+                if scale[j+1] > 2.*scale[j]:
+                    scale[j+1] = np.median(scale)
 	cen_fmol_tukey[i] = np.log10(tukey)
 	cen_fmol_large_scale[i] = scale / (np.log(10.)*tukey)
 	cen_fmol_small_scale[i] = scale / (np.sqrt(cen_no_gals[i])* np.log(10.)*tukey)
