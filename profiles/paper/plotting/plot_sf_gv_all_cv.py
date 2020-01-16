@@ -9,7 +9,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rcParams.update({'font.size': 14})
 
-softening = 0.5 # kpc/h
+softening = 0.5  * 2.8# kpc/h
 
 cmap = cm.get_cmap('viridis')
 sf_colors = [cmap(0.8), cmap(0.6), cmap(0.3)]
