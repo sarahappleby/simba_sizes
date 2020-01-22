@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import numpy as np
+import h5py
 
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         new_cmap = colors.LinearSegmentedColormap.from_list('trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
@@ -61,4 +63,27 @@ def plot_data(ax, z):
                                 ax.plot(logms,logRe,'o',color='k',label='CANDELS (van der Wel+14)', markersize=6)
                                 ax.errorbar(logms,logRe,lw=3,yerr=[eRelo,eRehi],color='k')
                                 """
+
+def plot_high_res(ax, snap, mtype):
+
+    high_res_file = '/home/sapple/simba_sizes/sizes/data/m25n512_pyloser_medians.h5'
+
+    with h5py.File(high_res_file, 'r') as hrf:
+
+        # first do star forming galaxies
+        bin_cent = hrf['snap_'+str(snap)][mtype+'_sf_bin_cent']
+        median = hrf['snap_'+str(snap)][mtype+'_sf_median']
+        ysighi = hrf['snap_'+str(snap)][mtype+'_sf_ysighi']
+        ysiglo = hrf['snap_'+str(snap)][mtype+'_sf_ysiglo']
+
+        ax.errorbar(bin_cent, median, yerr=[ysiglo, ysighi], color='k', label='High resolution SF')
+
+        # next quenched galaxies
+
+        bin_cent = hrf['snap_'+str(snap)][mtype+'_q_bin_cent']
+        median = hrf['snap_'+str(snap)][mtype+'_q_median']
+        ysighi = hrf['snap_'+str(snap)][mtype+'_q_ysighi']
+        ysiglo = hrf['snap_'+str(snap)][mtype+'_q_ysiglo']
+
+        ax.errorbar(bin_cent, median, yerr=[ysiglo, ysighi], color='k', label='High resolution Q')
 
