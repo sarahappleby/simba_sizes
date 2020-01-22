@@ -84,22 +84,24 @@ if __name__ == '__main__':
 
 		im = ax[i].scatter(simba_x, simba_y, c=simba_c, s=pixsize, lw=0, cmap=cmap)
 
-		# plot simba red and blue/ all galaxies
-		if simba_z[i] <= 2.5:
-			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr>ssfrlim]),np.log10(rhalf[ssfr>ssfrlim]))
-			ax[i].plot(bin_cent,ymean,'--',lw=4,color='dodgerblue', label='Star forming')   
-			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr<ssfrlim]),np.log10(rhalf[ssfr<ssfrlim]))
-			ax[i].plot(bin_cent,ymean,'--',lw=4,color='m', label='Passive')
-		else:
-			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(simba_x,simba_y)
-			ax[i].plot(bin_cent,ymean,'--',lw=4,color='b', label='Simba')
-
+		# plot redshift observational data
+		plot_data(ax[i], simba_z[i])
 
 		# plot high resolution (m25n512) data
 		plot_high_res(ax[i], simba_snaps[i], mtype)
 
-		# plot redshift observational data
-		plot_data(ax[i], simba_z[i])
+		# plot simba red and blue/ all galaxies
+		if simba_z[i] <= 2.5:
+			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr>ssfrlim]),np.log10(rhalf[ssfr>ssfrlim]))
+			ax[i].plot(bin_cent,ymean,'--',lw=4,color='blue', label='Star forming')   
+			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr<ssfrlim]),np.log10(rhalf[ssfr<ssfrlim]))
+			ax[i].plot(bin_cent,ymean,'--',lw=4,color='m', label='Passive')
+		else:
+			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(simba_x,simba_y)
+			ax[i].plot(bin_cent,ymean,'--',marker='o', lw=3,color='b', label='Simba')
+
+		if i == 2:
+			plot_sdss_sf(ax[i])
 
 
 		res_line = np.log10(2.8*0.5 / ((1+simba_z[i])*0.68))
@@ -109,13 +111,13 @@ if __name__ == '__main__':
 		ax[i].axhline(res_line, linestyle='--', color='k', lw=1.5, )
 		ax[i].set_ylim(-0.2, 1.4)
 		ax[i].set_xlabel(r'$\log\ (M_{*} / M_{\odot})$',fontsize=16)
-		ax[i].legend(fontsize=11)
+		do_legend_order(ax[i], simba_z[i])
 
 		if i ==0:
 			ax[i].set_ylabel(r'$\log\ (R_{half} / \textrm{kpc})$' ,fontsize=16)
 		elif i == 2:
-                        cbaxes = fig.add_axes([0.9, 0.11, 0.02, 0.77])
-                        cb = plt.colorbar(im, cax=cbaxes, label=r'$\textrm{log} (\textrm{sSFR} / \textrm{Gyr}^{-1})$')
+			cbaxes = fig.add_axes([0.9, 0.11, 0.02, 0.77])
+			cb = plt.colorbar(im, cax=cbaxes, label=r'$\textrm{log} (\textrm{sSFR} / \textrm{Gyr}^{-1})$')
 			#cbar = fig.colorbar(im,ax=ax.ravel().tolist(), label=r'$\textrm{log} (\textrm{sSFR} / \textrm{Gyr}^{-1})$')
 			#cbar.ax.tick_params(labelsize=12)
 
