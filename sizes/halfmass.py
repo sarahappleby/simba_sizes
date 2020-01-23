@@ -9,8 +9,6 @@ from astropy.cosmology import FlatLambdaCDM
 
 from size_finding_methods import compute_rfrac
 
-plotvar = 'mstar'
-
 # define input file
 MODEL = 'm25n512'
 WIND = ['s50j7k', 's50noagn', 's50nojet', 's50nox']

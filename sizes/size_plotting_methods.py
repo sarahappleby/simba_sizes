@@ -15,18 +15,18 @@ def plot_sdss_sf(ax):
     gamma = 10.72
     M0 = 4.9e11/0.68**2
     logRe_sf = np.log10(gamma * (10**ms_data/M0)**alpha * (1+10**ms_data/M0)**(beta-alpha))
-    ax.plot(ms_data,logRe_sf,'-',color='royalblue',lw=3.5,label='SDSS-SF', markersize=3)
+    ax.plot(ms_data,logRe_sf,'-',color='dodgerblue',lw=3.5,label='SDSS-SF', markersize=3)
 
 
 def plot_data(ax, z):
                 if z < 0.5: # Zhang+19 SDSS
                                 ms_data = np.linspace(9,12.0,20)
-                                #alpha = 0.23
-                                #beta = 0.41
-                                #gamma = 10.72
-                                #M0 = 4.9e11/0.68**2
-                                #logRe_sf = np.log10(gamma * (10**ms_data/M0)**alpha * (1+10**ms_data/M0)**(beta-alpha))
-                                #ax.plot(ms_data,logRe_sf,'-',color='royalblue',lw=4,label='SDSS-SF', markersize=3)
+                                alpha = 0.23
+                                beta = 0.41
+                                gamma = 10.72
+                                M0 = 4.9e11/0.68**2
+                                logRe_sf = np.log10(gamma * (10**ms_data/M0)**alpha * (1+10**ms_data/M0)**(beta-alpha))
+                                ax.plot(ms_data,logRe_sf,'-',color='dodgerblue',lw=4,label='SDSS-SF', markersize=3)
                                 alpha = -0.02
                                 beta = 0.65
                                 gamma = 1.58
@@ -42,7 +42,7 @@ def plot_data(ax, z):
                                 logRe = [0.4, 0.52, 0.61, 0.71, 0.86]
                                 eRelo = [0.25, 0.25, 0.25, 0.22, 0.17]
                                 eRehi = [0.23, 0.21, 0.09, 0.16, 0.18]
-                                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='s',color='royalblue', ecolor='royalblue',label='CANDELS LTG', markersize=6)
+                                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='s',color='dodgerblue', ecolor='dodgerblue',label='CANDELS LTG', markersize=6)
                                 logms = [9.25,9.75,10.25,10.75,11.25]
                                 logRe = [0.23, 0.195, 0.165, 0.375, 0.695]
                                 eRelo = [0.25, 0.33, 0.25, 0.21, 0.18]
@@ -59,7 +59,7 @@ def plot_data(ax, z):
                                 logRe = [0.39, 0.48, 0.57, 0.67]
                                 eRelo = [0.26, 0.26, 0.27, 0.21]
                                 eRehi = [0.22, 0.2, 0.18, 0.19]
-                                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='s',color='royalblue', ecolor='royalblue',label='CANDELS LTG', markersize=6)
+                                ax.errorbar(np.array(logms)-0.05,logRe,lw=3,yerr=[eRelo,eRehi],fmt='s',color='dodgerblue', ecolor='dodgerblue',label='CANDELS LTG', markersize=6)
                                 logms = [9.75, 10.25, 10.75, 11.25]
                                 logRe = [0.22, -0.01, 0.14, 0.41]
                                 eRelo = [0.24, 0.31, 0.26, 0.19]

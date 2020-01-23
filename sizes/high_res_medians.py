@@ -14,7 +14,7 @@ simba_z = [2.0, 1.0, 0.0]
 
 mtype = 'abs'
 
-model = 'm100n1024'
+model = 'm25n512'
 wind = 's50'
 
 mmin = 10.

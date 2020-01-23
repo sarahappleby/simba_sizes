@@ -56,16 +56,16 @@ if __name__ == '__main__':
 				f.create_dataset('sfr', data=np.array(sfr))
 		else:
 			with h5py.File(caesar_data, 'r') as f:
-				central = f['central'].value
-				ms = f['stellar_mass'].value
-				sfr = f['sfr'].value
+                            central = f['central'][:]
+                            ms = f['stellar_mass'][:]
+                            sfr = f['sfr'][:]
 
 		if simba_z[i] == 0.:
 			rhalf_file = '/home/sapple/simba_sizes/sizes/data/pyloser_sdss_r.h5'
 		else:
 			rhalf_file = '/home/sapple/simba_sizes/sizes/data/pyloser_v.h5'
 		with h5py.File(rhalf_file, 'r') as r:
-			rhalf = r[mtype+'_'+model+'_'+wind+'_'+simba_snaps[i]].value
+                    rhalf = r[mtype+'_'+model+'_'+wind+'_'+simba_snaps[i]][:]
 		rhalf = np.sum(rhalf, axis=0) / 3
 		ssfr = 1.e9*sfr/ms
 		ssfr = np.log10(ssfr)
@@ -93,15 +93,12 @@ if __name__ == '__main__':
 		# plot simba red and blue/ all galaxies
 		if simba_z[i] <= 2.5:
 			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr>ssfrlim]),np.log10(rhalf[ssfr>ssfrlim]))
-			ax[i].plot(bin_cent,ymean,'--',lw=4,color='blue', label='Star forming')   
+			ax[i].plot(bin_cent,ymean,'--',lw=3.5,color='blue', label='Star forming')   
 			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(np.log10(ms[ssfr<ssfrlim]),np.log10(rhalf[ssfr<ssfrlim]))
-			ax[i].plot(bin_cent,ymean,'--',lw=4,color='m', label='Passive')
+			ax[i].plot(bin_cent,ymean,'--',lw=3.5,color='m', label='Passive')
 		else:
 			bin_cent,ymean,ysiglo,ysighi = pm.runningmedian(simba_x,simba_y)
-			ax[i].plot(bin_cent,ymean,'--',marker='o', lw=3,color='b', label='Simba')
-
-		if i == 2:
-			plot_sdss_sf(ax[i])
+			ax[i].plot(bin_cent,ymean,'--',marker='o', lw=3.5,color='b', label='Simba')
 
 
 		res_line = np.log10(2.8*0.5 / ((1+simba_z[i])*0.68))
