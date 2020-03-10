@@ -28,7 +28,7 @@ wind = sys.argv[2]
 snap = sys.argv[3]
 results_dir = sys.argv[4]
 
-results_dir += '/'+model+'_'+snap+'/'
+results_dir += '/'+wind+'/'+model+'_'+snap+'/'
 if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
@@ -64,7 +64,7 @@ with h5py.File(halflight_file, 'r') as f:
 gal_rad = np.sum(gal_rad, axis=0) / 3.
 
 gal_ids = np.array([True for i in range(len(sim.galaxies))])
-gal_ids = np.arange(len(gal_ids))[gal_ids*gal_cent]
+gal_ids = np.arange(len(gal_ids))[gal_ids]
 
 # load in star particle data with readsnap
 star_pos = readsnap(snapfile, 'pos', 'star', suppress=1, units=1) / (h*(1.+redshift)) # in kpc
@@ -96,6 +96,11 @@ for i in gal_ids:
     
     print('\n')
     print('Galaxy ' +str(i))
+    
+    if (sim.galaxies[i].halo is None):
+        print('Galaxy has no halo, skipping')
+        continue
+
     slist = sim.galaxies[i].halo.slist
     glist = sim.galaxies[i].halo.glist
     rhalf = gal_rad[i]
@@ -127,7 +132,8 @@ for i in gal_ids:
     all_star_m[i] = make_profile(n, dr, r, mass, rhalf)
     all_star_npart[i] = npart_profile(n, dr, r)
     
-    
+    del pos, vel, mass, r
+
     if len(glist) > 0.:
         """
         For the gas particles:
@@ -161,7 +167,12 @@ for i in gal_ids:
         all_gas_h1_m[i] = make_profile(n, dr, r, h1*mass, rhalf)
         all_gas_h2_m[i] = make_profile(n, dr, r, h2*mass, rhalf)
         all_gas_npart[i] = npart_profile(n, dr, r) 
-        
+
+        del pos, mass, sfr, h1, h2, temp, r
+
+    gc.collect()
+
+
 with h5py.File(results_file, 'a') as f:
     f.create_dataset('gas_sfr', data=np.array(all_gas_sfr))
     f.create_dataset('h1', data=np.array(all_gas_h1))
@@ -172,6 +183,5 @@ with h5py.File(results_file, 'a') as f:
     f.create_dataset('h1_m', data=np.array(all_gas_h1_m))
     f.create_dataset('h2_m', data=np.array(all_gas_h2_m))
     f.create_dataset('gas_npart', data=np.array(all_gas_npart))
-    f.create_dataset('star_npart', data=np.array(all_gas_npart))
+    f.create_dataset('star_npart', data=np.array(all_star_npart))
     f.create_dataset('gal_ids', data=np.array(gal_ids))
-
