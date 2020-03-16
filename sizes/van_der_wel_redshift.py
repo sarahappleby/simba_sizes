@@ -26,8 +26,6 @@ m_star_str = str(m_star)[0] + 'e' + str(int(np.log10(m_star)))
 simba_snaps = ['062', '078', '090', '105', '125', '145', '151']
 z = np.array([3.0, 2.0, 1.5, 1.0, 0.5, 0.1, 0.0])
 
-simba_snaps = ['078', '105', '151']
-z = np.array([2.0, 1.0, 0.0])
 
 simba_z = np.log10(z + 1.)
 
@@ -91,23 +89,23 @@ popt, pcov = curve_fit(evolution, z, red_sizes)
 red_string = r'$R/\textrm{kpc} = %.1f (1 + z)^{%.2f}$' % (popt[0], popt[1])
 red_fit = evolution(np.array(simba_z), popt[0], popt[1])
 
-plt.errorbar(-0.01, 0.81, yerr=[[0.13], [0.13]], color='b', marker='s', markersize=4., linestyle='None', label='SDSS-SF')
+plt.errorbar(-0.01, 0.81, yerr=[[0.13], [0.13]], color='mediumblue', marker='s', markersize=4., linestyle='None', label='SDSS-SF')
 plt.errorbar(0.01, 0.69, yerr=[[0.13],[0.17]], color='r', marker='s', markersize=4., linestyle='None', label='SDSS-Q')
 
 # plotting the medians with the data
 plot_z = np.log10(np.arange(0., 3.1, 0.1) +1)
-plt.plot(plot_z, np.log10(vdw_blue), '--', lw=1.2, color='b', label='CANDELS-LTG')
+plt.plot(plot_z, np.log10(vdw_blue), '--', lw=1.2, color='mediumblue', label='CANDELS-LTG')
 plt.plot(plot_z, np.log10(vdw_red), '--', lw=1.2, color='r', label='CANDELS-ETG')
 
-plt.plot(simba_z, np.log10(blue_sizes), linestyle='-', c='b', lw=1.2, label='Star forming')
-plt.fill_between(simba_z, np.log10(blue_per_25), np.log10(blue_per_75), facecolor='b', alpha=0.15, linewidth=1)
+plt.plot(simba_z, np.log10(blue_sizes), linestyle='-', c='dodgerblue', lw=1.2, label='Star forming')
+plt.fill_between(simba_z, np.log10(blue_per_25), np.log10(blue_per_75), facecolor='dodgerblue', alpha=0.15, linewidth=1)
 
-plt.plot(simba_z, np.log10(red_sizes), linestyle='-', c='r', lw=1.2, label='Passive')
-plt.fill_between(simba_z, np.log10(red_per_25), np.log10(red_per_75), facecolor='r', alpha=0.15, linewidth=1)
+plt.plot(simba_z, np.log10(red_sizes), linestyle='-', c='m', lw=1.2, label='Passive')
+plt.fill_between(simba_z, np.log10(red_per_25), np.log10(red_per_75), facecolor='m', alpha=0.15, linewidth=1)
 
-plt.xlabel(r'\textrm{log} (1+z)', fontsize=16)
+plt.xlabel(r'\textrm{log} (1+z)', fontsize=15)
 #plt.xlim(3.1, -0.1)
-plt.ylabel(r'$\textrm{log}\ ( R_\textrm{half}\ /\ \textrm{kpc})$' ,fontsize=16)
-plt.legend(loc=3, fontsize=12)
+plt.ylabel(r'$\textrm{log}\ ( R_\textrm{half}\ /\ \textrm{kpc})$' ,fontsize=15)
+plt.legend(loc=3, fontsize=11)
 plt.savefig(plot_dir+'redshift_medians_'+m_star_str+'.png')
 plt.show()
